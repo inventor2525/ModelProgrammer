@@ -51,7 +51,58 @@ user@computer:~/AIs_Projects/RobotPathPlanning$"""},
 	{"role": "assistant", "content": "git checkout -b 'Vector2'"},
 	{"role": "user", "name":"Terminal", "content": r"""Switched to a new branch 'Vector2'
 user@computer:~/AIs_Projects/RobotPathPlanning$"""},
-	
+	{"role": "assistant", "content": r"""echo 'class Vector2:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __add__(self, other):
+        return Vector2(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        return Vector2(self.x - other.x, self.y - other.y)
+
+    def __mul__(self, scalar):
+        return Vector2(self.x * scalar, self.y * scalar)
+
+    def __truediv__(self, scalar):
+        return Vector2(self.x / scalar, self.y / scalar)
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __str__(self):
+        return f\"({self.x}, {self.y})\"' > Vector2.py; cat Vector2.py"""},
+	{"role": "user", "name":"Terminal", "content": r"""class Vector2:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __add__(self, other):
+        return Vector2(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        return Vector2(self.x - other.x, self.y - other.y)
+
+    def __mul__(self, scalar):
+        return Vector2(self.x * scalar, self.y * scalar)
+
+    def __truediv__(self, scalar):
+        return Vector2(self.x / scalar, self.y / scalar)
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __str__(self):
+        return f\"({self.x}, {self.y})\"
+user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": "git stage *; git commit -m 'Added Vector2 class'"},
+	{"role": "user", "name":"Terminal", "content": r"""[Vector2 1b0b0a5] Added Vector2 class
+1 file changed, 17 insertions(+)
+user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": "git checkout -b 'Robot' master"},
+	{"role": "user", "name":"Terminal", "content": r"""Switched to a new branch 'Robot'
+user@computer:~/AIs_Projects/RobotPathPlanning$"""},
 ])
 
 print(response)
