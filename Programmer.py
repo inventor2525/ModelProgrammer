@@ -178,7 +178,7 @@ class Path:
 		
 	def advance(self):
 		self.current_point_in[Output truncated]"""},
-	{"role": "user", "name":"Human", "content": "Doing good! Don't forget to commit your changes though. Merging branches is also a good idea. And, you might want to consider adding some unit tests"},
+	#{"role": "user", "name":"Human", "content": "Doing good! Don't forget to commit your changes though. Merging branches is also a good idea. And, you might want to consider adding some unit tests"},
 	
 	
 	
@@ -187,41 +187,34 @@ class Path:
 	
 	
 	#Message with incomplete code:
-	{"role": "assistant", "content": r"""git add .
-git commit -m 'Added Path and Obstacle classes'
-git checkout -b 'RobotMovement' Robot
-echo 'from typing import List
+	{"role": "assistant", "content": r"""echo 'from typing import List
 from Vector2 import Vector2
 from Robot import Robot
 from PathPlanning import Path, Obstacle
 
-class RobotMovement:
-    def __init__(self, robot: Robot, path: Path, obstacles: List[Obstacle], delta_time: float):
+class PathPlanner:
+    def __init__(self, robot: Robot, path: Path, obstacles: List[Obstacle]):
         self.robot = robot
         self.path = path
         self.obstacles = obstacles
-        self.delta_time = delta_time
 
-    def update(self):
-        if self.path.is_finished():
-            return
-
-        current_point = self.path.get_current_point()
-        distance_to_point = (current_point - self.robot.position).magnitude()
-        if distance_to_point < 0.1:
-            self.path.advance()
-            return
-
-        desired_velocity = (current_point - self.robot.position).normalized() * self.robot.max_speed
-        steering_force = (desired_velocity - self.robot.velocity) / self.delta_time
-        for obstacle in self.obstacles:
-            if obstacle.is_colliding(self.robot.position, 0.5):
-                steering_force += (self.robot.position - obstacle.position).normalized() * self.robot.max_acceleration
-
-        self.robot.velocity += steering_force * self.delta_time
-        if self.robot.velocity.magnitude() > self.robot.max_speed:
-            self.robot.velocity = self.robot.velocity.normalized() * self.robot.max_speed
-        self.robot.position += self.robot"""},
+    def update(self, delta_time: float):
+        if not self.path.is_finished():
+            target_point = self.path.get_current_point()
+            distance_to_target = (target_point - self.robot.position).magnitude()
+            if distance_to_target < 0.1:
+                self.path.advance()
+            else:
+                desired_velocity = (target_point - self.robot.position).normalized() * self.robot.max_speed
+                steering_force = (desired_velocity - self.robot.velocity) / delta_time
+                for obstacle in self.obstacles:
+                    if obstacle.is_colliding(self.robot.position, 0.5):
+                        obstacle_avoidance_force = (self.robot.position - obstacle.position).normalized() * self.robot.max_acceleration
+                        steering_force += obstacle_avoidance_force
+                self.robot.velocity += steering_force * delta_time
+                if self.robot.velocity.magnitude() > self.robot.max_speed:
+                    self.robot.velocity = self.robot.velocity.normalized() * self.robot.max_speed
+        self.robot.update(delta_time)' > PathPlanner.py; cat PathPlanner.py"""}
 
 ])
 
