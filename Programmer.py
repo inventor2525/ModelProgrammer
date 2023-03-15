@@ -5,104 +5,82 @@ response = chat([
 	{"role": "user", "name":"Terminal", "content": "user@computer:~$"},
 	{"role": "user", "name":"Human", "content": "Write me a python program that simulates a 2D robot following a path from a to b. Use classes like Vector2 to implement your logic, write them where needed, be sure to test it good. Don't use any visualization though since you cant see it, instead do everything with text output. Generate some fake data, and have some nice fixed deterministic obsticles in your map to test with."},
 	{"role": "assistant", "content": "mkdir -p AIs_Projects/RobotPathPlanning; cd AIs_Projects/RobotPathPlanning; git init; touch README.md; git stage *; git commit -m 'Initial commit';"},
-	{"role": "user", "name":"Terminal", "content": r"""Initialized empty Git repository in /home/charlie/AIs_Projects/RobotPathPlanning/.git/
-[master (root-commit) a8bc191] Initial commit
-1 file changed, 0 insertions(+), 0 deletions(-)
-create mode 100644 README.md
-user@computer:~/AIs_Projects/RobotPathPlanning$
-"""},
-	{"role": "assistant", "content": "ls -a"},
-	{"role": "user", "name":"Terminal", "content": r""".  ..  .git  README.md
-user@computer:~/AIs_Projects/RobotPathPlanning$"""},
-	{"role": "assistant", "content": "echo 'This is a project to simulate a 2D robot following a path from a to b.' > README.md"},
-	{"role": "user", "name":"Terminal", "content": r"""user@computer:~/AIs_Projects/RobotPathPlanning$"""},
-	{"role": "assistant", "content": "git add README.md; git commit -m 'Added project description'"},
-	{"role": "user", "name":"Terminal", "content": r"""[master 1d0b0a5] Added project description
-1 file changed, 1 insertion(+)
-user@computer:~/AIs_Projects/RobotPathPlanning$"""},
-	{"role": "user", "name":"Human", "content": "Great work so far! Lets add a note to that readme though for what sort of files we're gonna have in this project."},
-	{"role": "assistant", "content": "echo 'It will have the following files:Vector2.py, Robot.py, PathPlanner.py tests/* and MapGenerator.py' >> README.md; cat README.md"},
-	{"role": "user", "name":"Terminal", "content": r"""This is a project to simulate a 2D robot following a path from a to b.
-It will have the following files:Vector2.py, Robot.py, PathPlanner.py tests/* and MapGenerator.py
-user@computer:~/AIs_Projects/RobotPathPlanning$"""},
-	{"role": "assistant", "content": "Human: Is this acceptable?'"},
-	{"role": "user", "name":"Human", "content": "Yes, that's great, thanks!"},
-	{"role": "assistant", "content": "git stage *; git commit -m 'Added project structure info to readme'"},
-	{"role": "user", "name":"Terminal", "content": r"""[master c166f4b] Added project structure info to readme
- 1 file changed, 2 insertions(+)
- user@computer:~/AIs_Projects/RobotPathPlanning$"""},
-	{"role": "assistant", "content": "touch Vector2.py; touch Robot.py; touch PathPlanner.py; mkdir tests; touch tests/test_Vector2.py; touch tests/test_Robot.py; touch tests/test_PathPlanner.py; touch MapGenerator.py; git stage *; git commit -m 'Added project structure'"},
-	{"role": "user", "name":"Terminal", "content": r"""[master 230cf51] Added project structure
- 7 files changed, 0 insertions(+), 0 deletions(-)
- create mode 100644 MapGenerator.py
- create mode 100644 PathPlanner.py
- create mode 100644 Robot.py
- create mode 100644 Vector2.py
- create mode 100644 tests/test_PathPlanner.py
- create mode 100644 tests/test_Robot.py
- create mode 100644 tests/test_Vector2.py
- user@computer:~/AIs_Projects/RobotPathPlanning$"""},
-	{"role": "assistant", "content": "git log --oneline"},
-	{"role": "user", "name":"Terminal", "content": r"""230cf51 Added project structure
-c166f4b Added project structure info to readme
-1d0b0a5 Added project description
-a8bc191 Initial commit
-user@computer:~/AIs_Projects/RobotPathPlanning$"""},
-	{"role": "assistant", "content": "git checkout -b 'Vector2'"},
-	{"role": "user", "name":"Terminal", "content": r"""Switched to a new branch 'Vector2'
-user@computer:~/AIs_Projects/RobotPathPlanning$"""},
-	{"role": "assistant", "content": r"""echo 'class Vector2:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __add__(self, other):
-        return Vector2(self.x + other.x, self.y + other.y)
-
-    def __sub__(self, other):
-        return Vector2(self.x - other.x, self.y - other.y)
-
-    def __mul__(self, scalar):
-        return Vector2(self.x * scalar, self.y * scalar)
-
-    def __truediv__(self, scalar):
-        return Vector2(self.x / scalar, self.y / scalar)
-
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
-
-    def __str__(self):
-        return f\"({self.x}, {self.y})\"' > Vector2.py; cat Vector2.py"""},
-	{"role": "user", "name":"Terminal", "content": r"""class Vector2:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __add__(self, other):
-        return Vector2(self.x + other.x, self.y + other.y)
-
-    def __sub__(self, other):
-        return Vector2(self.x - other.x, self.y - other.y)
-
-    def __mul__(self, scalar):
-        return Vector2(self.x * scalar, self.y * scalar)
-
-    def __truediv__(self, scalar):
-        return Vector2(self.x / scalar, self.y / scalar)
-
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
-
-    def __str__(self):
-        return f\"({self.x}, {self.y})\"
-user@computer:~/AIs_Projects/RobotPathPlanning$"""},
-	{"role": "assistant", "content": "git stage *; git commit -m 'Added Vector2 class'"},
-	{"role": "user", "name":"Terminal", "content": r"""[Vector2 1b0b0a5] Added Vector2 class
-1 file changed, 17 insertions(+)
-user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "system", "content": "Some of your context will now be replaced with summary information. Prior to this point and after the previous few message, you created a series of files for this project and listed them in your README.md. You also created a Vector2 class. Note that it might be a good idea to tree your pwd or grep arround. Keep cat calls to a minimum though or I'll have to trash your memory again."},
 	{"role": "assistant", "content": "git checkout -b 'Robot' master"},
 	{"role": "user", "name":"Terminal", "content": r"""Switched to a new branch 'Robot'
 user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": r"""echo 'from Vector2 import Vector2
+
+class Robot:
+    def __init__(self, position, velocity, max_speed, max_acceleration):
+        self.position = position
+        self.velocity = velocity
+        self.max_speed = max_speed
+        self.max_acceleration = max_acceleration
+
+    def update(self, delta_time):
+        self.position += self.velocity * delta_time
+        self.velocity += self.max_acceleration * delta_time
+        if self.velocity.magnitude() > self.max_speed:
+            self.velocity = self.velocity.normalized() * self.max_speed' > Robot.py; cat Robot.py"""},
+	{"role": "user", "name":"Terminal", "content": r"""from Vector2 import Vector2
+
+class Robot:
+    def __init__(self, position, velocity, max_speed, max_acceleration):
+        self.position = position
+        self.velocity = velocity
+        self.max_speed = max_speed
+        self.max_acceleration = max_acceleration
+
+    def update(self, delta_time):
+        self.position += self.velocity * delta_time
+        self.velocity += self.max_acceleration * delta_time
+        if self.velocity.magnitude() > self.max_speed:
+            self.velocity = self.velocity.normalized() * self.max_speed
+charlie@nuc:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": r"""echo 'from typing import List
+from Vector2 import Vector2
+from Robot import Robot
+
+class Path:
+    def __init__(self, points: List[Vector2]):
+        self.points = points
+        self.current_point_index = 0
+
+    def get_current_point(self) -> Vector2:
+        return self.points[self.current_point_index]
+
+    def is_finished(self) -> bool:
+        return self.current_point_index >= len(self.points) - 1
+
+    def advance(self):
+        self.current_point_index += 1
+
+class Obstacle:
+    def __init__(self, position: Vector2, radius: float):
+        self.position = position
+        self.radius = radius
+
+    def is_colliding(self, other_position: Vector2, other_radius: float) -> bool:
+        return (self.position - other_position).magnitude() < self.radius + other_radius' > PathPlanning.py; cat PathPlanning.py"""},
+	{"role": "user", "name":"Terminal", "content": r"""from typing import List
+from Vector2 import Vector2
+from Robot import Robot
+
+class Path:
+	def __init__(self, points: List[Vector2]):
+		self.points = points
+		self.current_point_index = 0
+		
+	def get_current_point(self) -> Vector2:
+		return self.points[self.current_point_index]
+		
+	def is_finished(self) -> bool:
+		return self.current_point_index >= len(self.points) - 1
+		
+	def advance(self):
+		self.current_point_in[Output truncated]"""},
+	{"role": "user", "name":"Human", "content": "Doing good! Don't forget to commit your changes though. Merging branches is also a good idea. And, you might want to consider adding some unit tests"},
 ])
 
 print(response)
