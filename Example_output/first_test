@@ -1,0 +1,38 @@
+import openai
+
+openai.api_key_path = "my_API_key.txt"
+
+MODEL = "gpt-3.5-turbo"
+response = openai.ChatCompletion.create(
+    model=MODEL,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Knock knock."},
+        {"role": "assistant", "content": "Who's there?"},
+        {"role": "user", "content": "Orange."},
+    ],
+    temperature=0,
+)
+gave 
+
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Orange who?",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1678867963,
+  "id": "chatcmpl-6uGXTLuXYDOWDqMHldw4iiRDvFZ9x",
+  "model": "gpt-3.5-turbo-0301",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 4,
+    "prompt_tokens": 38,
+    "total_tokens": 42
+  }
+}

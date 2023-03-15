@@ -1,0 +1,21 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "echo 'class Vector2:\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def __add__(self, other):\n        return Vector2(self.x + other.x, self.y + other.y)\n\n    def __sub__(self, other):\n        return Vector2(self.x - other.x, self.y - other.y)\n\n    def __mul__(self, scalar):\n        return Vector2(self.x * scalar, self.y * scalar)\n\n    def __truediv__(self, scalar):\n        return Vector2(self.x / scalar, self.y / scalar)\n\n    def __eq__(self, other):\n        return self.x == other.x and self.y == other.y\n\n    def __str__(self):\n        return f\"({self.x}, {self.y})\"' > Vector2.py; cat Vector2.py",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1678877602,
+  "id": "chatcmpl-6uJ2wyDyfaS666giICCDWFuwv98cR",
+  "model": "gpt-3.5-turbo-0301",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 180,
+    "prompt_tokens": 1311,
+    "total_tokens": 1491
+  }
+}
