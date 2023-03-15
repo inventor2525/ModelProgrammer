@@ -5,10 +5,108 @@ response = chat([
 	{"role": "user", "name":"Terminal", "content": "user@computer:~$"},
 	{"role": "user", "name":"Human", "content": "Write me a python program that simulates a 2D robot following a path from a to b. Use classes like Vector2 to implement your logic, write them where needed, be sure to test it good. Don't use any visualization though since you cant see it, instead do everything with text output. Generate some fake data, and have some nice fixed deterministic obsticles in your map to test with."},
 	{"role": "assistant", "content": "mkdir -p AIs_Projects/RobotPathPlanning; cd AIs_Projects/RobotPathPlanning; git init; touch README.md; git stage *; git commit -m 'Initial commit';"},
-	{"role": "system", "content": "Some of your context will now be replaced with summary information. Prior to this point and after the previous few message, you created a series of files for this project and listed them in your README.md. You also created a Vector2 class. Note that it might be a good idea to tree your pwd or grep arround. Keep cat calls to a minimum though or I'll have to trash your memory again."},
+	{"role": "user", "name":"Terminal", "content": r"""Initialized empty Git repository in /home/charlie/AIs_Projects/RobotPathPlanning/.git/
+[master (root-commit) a8bc191] Initial commit
+1 file changed, 0 insertions(+), 0 deletions(-)
+create mode 100644 README.md
+user@computer:~/AIs_Projects/RobotPathPlanning$
+"""},
+	{"role": "assistant", "content": "ls -a"},
+	{"role": "user", "name":"Terminal", "content": r""".  ..  .git  README.md
+user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": "echo 'This is a project to simulate a 2D robot following a path from a to b.' > README.md"},
+	{"role": "user", "name":"Terminal", "content": r"""user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": "git add README.md; git commit -m 'Added project description'"},
+	{"role": "user", "name":"Terminal", "content": r"""[master 1d0b0a5] Added project description
+1 file changed, 1 insertion(+)
+user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "user", "name":"Human", "content": "Great work so far! Lets add a note to that readme though for what sort of files we're gonna have in this project."},
+	{"role": "assistant", "content": "echo 'It will have the following files:Vector2.py, Robot.py, PathPlanner.py tests/* and MapGenerator.py' >> README.md; cat README.md"},
+	{"role": "user", "name":"Terminal", "content": r"""This is a project to simulate a 2D robot following a path from a to b.
+It will have the following files:Vector2.py, Robot.py, PathPlanner.py tests/* and MapGenerator.py
+user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": "Human: Is this acceptable?'"},
+	{"role": "user", "name":"Human", "content": "Yes, that's great, thanks!"},
+	{"role": "assistant", "content": "git stage *; git commit -m 'Added project structure info to readme'"},
+	{"role": "user", "name":"Terminal", "content": r"""[master c166f4b] Added project structure info to readme
+ 1 file changed, 2 insertions(+)
+ user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": "touch Vector2.py; touch Robot.py; touch PathPlanner.py; mkdir tests; touch tests/test_Vector2.py; touch tests/test_Robot.py; touch tests/test_PathPlanner.py; touch MapGenerator.py; git stage *; git commit -m 'Added project structure'"},
+	{"role": "user", "name":"Terminal", "content": r"""[master 230cf51] Added project structure
+ 7 files changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 MapGenerator.py
+ create mode 100644 PathPlanner.py
+ create mode 100644 Robot.py
+ create mode 100644 Vector2.py
+ create mode 100644 tests/test_PathPlanner.py
+ create mode 100644 tests/test_Robot.py
+ create mode 100644 tests/test_Vector2.py
+ user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": "git log --oneline"},
+	{"role": "user", "name":"Terminal", "content": r"""230cf51 Added project structure
+c166f4b Added project structure info to readme
+1d0b0a5 Added project description
+a8bc191 Initial commit
+user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": "git checkout -b 'Vector2'"},
+	{"role": "user", "name":"Terminal", "content": r"""Switched to a new branch 'Vector2'
+user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": r"""echo 'class Vector2:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __add__(self, other):
+        return Vector2(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        return Vector2(self.x - other.x, self.y - other.y)
+
+    def __mul__(self, scalar):
+        return Vector2(self.x * scalar, self.y * scalar)
+
+    def __truediv__(self, scalar):
+        return Vector2(self.x / scalar, self.y / scalar)
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __str__(self):
+        return f\"({self.x}, {self.y})\"' > Vector2.py; cat Vector2.py"""},
+	{"role": "user", "name":"Terminal", "content": r"""class Vector2:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __add__(self, other):
+        return Vector2(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        return Vector2(self.x - other.x, self.y - other.y)
+
+    def __mul__(self, scalar):
+        return Vector2(self.x * scalar, self.y * scalar)
+
+    def __truediv__(self, scalar):
+        return Vector2(self.x / scalar, self.y / scalar)
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __str__(self):
+        return f\"({self.x}, {self.y})\"
+user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+	{"role": "assistant", "content": "git stage *; git commit -m 'Added Vector2 class'"},
+	{"role": "user", "name":"Terminal", "content": r"""[Vector2 1b0b0a5] Added Vector2 class
+1 file changed, 17 insertions(+)
+user@computer:~/AIs_Projects/RobotPathPlanning$"""},
 	{"role": "assistant", "content": "git checkout -b 'Robot' master"},
 	{"role": "user", "name":"Terminal", "content": r"""Switched to a new branch 'Robot'
 user@computer:~/AIs_Projects/RobotPathPlanning$"""},
+
+
+
+
 	{"role": "assistant", "content": r"""echo 'from Vector2 import Vector2
 
 class Robot:
@@ -81,6 +179,50 @@ class Path:
 	def advance(self):
 		self.current_point_in[Output truncated]"""},
 	{"role": "user", "name":"Human", "content": "Doing good! Don't forget to commit your changes though. Merging branches is also a good idea. And, you might want to consider adding some unit tests"},
+	
+	
+	
+	
+	
+	
+	
+	#Message with incomplete code:
+	{"role": "assistant", "content": r"""git add .
+git commit -m 'Added Path and Obstacle classes'
+git checkout -b 'RobotMovement' Robot
+echo 'from typing import List
+from Vector2 import Vector2
+from Robot import Robot
+from PathPlanning import Path, Obstacle
+
+class RobotMovement:
+    def __init__(self, robot: Robot, path: Path, obstacles: List[Obstacle], delta_time: float):
+        self.robot = robot
+        self.path = path
+        self.obstacles = obstacles
+        self.delta_time = delta_time
+
+    def update(self):
+        if self.path.is_finished():
+            return
+
+        current_point = self.path.get_current_point()
+        distance_to_point = (current_point - self.robot.position).magnitude()
+        if distance_to_point < 0.1:
+            self.path.advance()
+            return
+
+        desired_velocity = (current_point - self.robot.position).normalized() * self.robot.max_speed
+        steering_force = (desired_velocity - self.robot.velocity) / self.delta_time
+        for obstacle in self.obstacles:
+            if obstacle.is_colliding(self.robot.position, 0.5):
+                steering_force += (self.robot.position - obstacle.position).normalized() * self.robot.max_acceleration
+
+        self.robot.velocity += steering_force * self.delta_time
+        if self.robot.velocity.magnitude() > self.robot.max_speed:
+            self.robot.velocity = self.robot.velocity.normalized() * self.robot.max_speed
+        self.robot.position += self.robot"""},
+
 ])
 
 print(response)
