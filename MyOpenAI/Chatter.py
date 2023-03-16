@@ -53,9 +53,11 @@ def chat(messages, model="gpt-3.5-turbo", temperature=0):
 		if not c.fetchone():
 			c.execute("INSERT INTO message_info VALUES (?, ?, ?, ?)", (hash, message["role"], "chat param", date))
 	
-	#Save the conversation to the database
+	#Save the conversation to the database if it doesn't already exist
 	chat_hash = get_hash(hashes)
-	c.execute("INSERT INTO conversations VALUES (?, ?, ?, ?)", (chat_hash, previous_chat, json.dumps(hashes), None))
+	c.execute("SELECT * FROM conversations WHERE hash = ?", (chat_hash,))
+	if not c.fetchone():
+		c.execute("INSERT INTO conversations VALUES (?, ?, ?, ?)", (chat_hash, previous_chat, json.dumps(hashes), None))
 	previous_chat = chat_hash
 	
 	#Commit the changes to the database
@@ -77,16 +79,22 @@ def chat(messages, model="gpt-3.5-turbo", temperature=0):
 	#Save the response to the database
 	response_hash = get_hash(response)
 	c.execute("INSERT INTO messages VALUES (?, ?)", (response_hash, json.dumps(response)))
+	conn.commit()
 	
 	#Save the message_info to the database preserving the origional info if it exists
 	c.execute("SELECT * FROM message_info WHERE hash = ?", (response_hash,))
 	if not c.fetchone():
 		c.execute("INSERT INTO message_info VALUES (?, ?, ?, ?)", (response_hash, "assistant", "OpenAI Chat API", date))
 	
+	print(response)
 	#Update the conversation to include the response by first getting the response_hashs
 	c.execute("SELECT response_hashs FROM conversations WHERE hash = ?", (chat_hash,))
 	#parse the response_hashs from the database handling the fact that it may be None
-	response_hashs = json.loads(c.fetchone()[0]) if c.fetchone()[0] else []
+	fetched_result = c.fetchone()
+	if fetched_result is None or fetched_result[0] is None:
+		response_hashs = []
+	else:
+		response_hashs = json.loads(fetched_result[0])
 	#update the response_hashs for the conversation
 	c.execute("UPDATE conversations SET response_hashs = ? WHERE hash = ?", (json.dumps(response_hashs + [response_hash]), chat_hash))
 	
