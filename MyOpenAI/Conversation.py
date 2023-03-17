@@ -35,11 +35,18 @@ class Message(Hashable):
 		else:
 			return cls({"role":"user", "name":role, "content":content})
 	
+	@property
+	def full_role(self):
+		role = self.json['role']
+		if 'name' in self.json:
+			return f"{role} {self.json['name']}".strip()
+		return role.strip()
+		
 	def __str__(self):
 		return json.dumps(self.json)
 		
 	def __getitem__(self, key):
-		return self.json[key]
+		return self.json.get(key, None)
 
 class Conversation(Hashable):
 	def __init__(self, messages:List[Message]):

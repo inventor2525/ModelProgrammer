@@ -6,11 +6,16 @@ from PyQt5.QtCore import Qt
 
 from PyQt5.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QSizePolicy, QToolButton
 from PyQt5.QtCore import Qt, QSize, QPoint, QSettings, QByteArray, pyqtSignal
-from PyQt5.QtGui import QIcon, QPixmap, QImage, QTextOption
+from PyQt5.QtGui import QIcon, QPixmap, QImage, QTextOption, QColor, QPalette
 
 class MessageView(QFrame):
 	rowHeightChanged = pyqtSignal()
-	
+	def set_widget_background(self, widget, color):
+		widget.setAutoFillBackground(True)
+		palette = widget.palette()
+		palette.setColor(QPalette.Background, color)
+		widget.setPalette(palette)
+		
 	def __init__(self, message: Message, parent=None):
 		super().__init__(parent)
 		self.parent = parent
@@ -22,13 +27,22 @@ class MessageView(QFrame):
 		
 		self.layout = QHBoxLayout()
 		self.setLayout(self.layout)
+		
+		self.color_palette = parent.color_palette
+
+		# Set background color for the row
+		background_color = self.color_palette.get(message.full_role, QColor(Qt.white))
+		background_color = self.color_palette.get(message.full_role, QColor(Qt.white))
+		self.set_widget_background(self, background_color)
+		
+		self.setAutoFillBackground(True)
+		palette = self.palette()
+		palette.setColor(QPalette.Background, background_color)
+		self.setPalette(palette)
 
 		# Role (and optional name) label
 		self.role_label = QLabel()
-		if 'name' in message.json:
-			self.role_label.setText(f"{message['role']} ({message['name']}):")
-		else:
-			self.role_label.setText(f"{message['role']}:")
+		self.role_label.setText(f"{message.full_role}:")
 		self.role_label.setFixedWidth(100)
 		self.role_label.setWordWrap(True)
 		self.layout.addWidget(self.role_label)
@@ -69,7 +83,7 @@ class MessageView(QFrame):
 		self.panel_layout.addWidget(self.expand_btn, alignment=Qt.AlignTop)
 
 		self.update_text_edit_height()
-		
+	
 	def update_text_edit_height(self):
 		new_height = int(self.delete_btn.sizeHint().height() * 3)
 		margins = self.text_edit.contentsMargins()
@@ -149,7 +163,6 @@ class ChatUI(QWidget):
 		
 		self.layout.addLayout(self.input_layout)
 		self.input_field.setMinimumHeight(self.send_button.sizeHint().height())
-
 		
 	def read_settings(self):
 		settings = QSettings("MyCompany", "MyApp")
@@ -158,7 +171,25 @@ class ChatUI(QWidget):
 	def write_settings(self):
 		settings = QSettings("MyCompany", "MyApp")
 		settings.setValue("geometry", self.saveGeometry())
-		
+	
+	@property
+	def color_palette(self):
+		if not hasattr(self, '_color_palette') or self._color_palette is None:
+			self._color_palette = {}
+			message_types = set()
+
+			# Extract message types from the messages in the conversation
+			for message in self.conversation.messages:
+				message_types.add(message.full_role)
+
+			# Assign colors to message types
+			for i, message_type in enumerate(sorted(message_types)):
+				color = QColor.fromHsv((i * 30) % 360, 255, 230)
+				self._color_palette[message_type] = color
+
+		return self._color_palette
+
+
 	def send_message(self):
 		message_text = self.input_field.text().strip()
 		if message_text:
@@ -187,6 +218,10 @@ class ChatUI(QWidget):
 		item.setSizeHint(QSize(item_widget.sizeHint().width(), item_widget.sizeHint().height()))
 		
 	def add_message(self, message: Message):
+		message_type = message.full_role
+		if message_type not in self.color_palette:
+			self.color_palette[message_type] = QColor.fromHsv((len(self.color_palette) * 30) % 360, 255, 230)
+
 		# self.conversation.add_message(message)
 		item = QListWidgetItem()
 		item_widget = MessageView(message, self)
