@@ -1,14 +1,16 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLineEdit, QPushButton, QScrollArea, QLabel
 from .Conversation import Conversation, Message
-from PyQt5.QtWidgets import QListWidget, QListWidgetItem, QFrame
+from PyQt5.QtWidgets import QListWidget, QListWidgetItem, QFrame, QAbstractItemView
 from PyQt5.QtCore import Qt
 
 from PyQt5.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QSizePolicy, QToolButton
-from PyQt5.QtCore import Qt, QSize, QPoint, QSettings, QByteArray
+from PyQt5.QtCore import Qt, QSize, QPoint, QSettings, QByteArray, pyqtSignal
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QTextOption
 
 class MessageView(QFrame):
+	rowHeightChanged = pyqtSignal()
+	
 	def __init__(self, message: Message, parent=None):
 		super().__init__(parent)
 		self.parent = parent
@@ -16,6 +18,8 @@ class MessageView(QFrame):
 		
 		self.message = message
 
+		# rowHeightChanged = pyqtSignal()
+		
 		self.layout = QHBoxLayout()
 		self.setLayout(self.layout)
 
@@ -36,11 +40,12 @@ class MessageView(QFrame):
 		self.text_edit.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
 		self.text_edit.textChanged.connect(self.on_text_changed)
-		
+		self.text_edit.textChanged.connect(self.update_text_edit_height)
 		self.layout.addWidget(self.text_edit)
 
 		# Vertical panel
 		self.panel_layout = QVBoxLayout()
+		self.panel_layout.setAlignment(Qt.AlignTop)
 		self.layout.addLayout(self.panel_layout)
 
 		# Delete button (X)
@@ -54,33 +59,46 @@ class MessageView(QFrame):
 		self.confirm_btn.clicked.connect(self.confirm_changes)
 		self.confirm_btn.setVisible(False)
 		self.confirm_btn.setFixedWidth(25)
-		self.panel_layout.addWidget(self.confirm_btn)
+		self.panel_layout.addWidget(self.confirm_btn, alignment=Qt.AlignTop)
 
 		# Expand message view button (rotating arrow)
 		self.expand_btn = QToolButton()
 		self.expand_btn.setCheckable(True)
 		self.expand_btn.setArrowType(Qt.RightArrow)
 		self.expand_btn.toggled.connect(self.toggle_expand)
-		self.panel_layout.addWidget(self.expand_btn, alignment=Qt.AlignBottom)
+		self.panel_layout.addWidget(self.expand_btn, alignment=Qt.AlignTop)
 
-	def toggle_expand(self, checked):
-		if checked:
-			self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-			self.text_edit.setMinimumHeight(int(self.text_edit.document().size().height()))
-			self.expand_btn.setArrowType(Qt.DownArrow)
+		self.update_text_edit_height()
+		
+	def update_text_edit_height(self):
+		new_height = int(self.delete_btn.sizeHint().height() * 3)
+		margins = self.text_edit.contentsMargins()
+		if self.expand_btn.arrowType() == Qt.DownArrow:
+			new_height = max(int(self.text_edit.document().size().height()), new_height) + margins.top() + margins.bottom()
+			self.text_edit.setFixedHeight(new_height)
 		else:
-			self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-			self.text_edit.setMaximumHeight(int(self.delete_btn.sizeHint().height() * 3))
-			self.expand_btn.setArrowType(Qt.RightArrow)
-		self.text_edit.updateGeometry()
+			new_height = int(self.delete_btn.sizeHint().height() * 3) + margins.top() + margins.bottom()
+			self.text_edit.setFixedHeight(new_height)
+		self.rowHeightChanged.emit()
+		
+	def toggle_expand(self, checked):
+		self.expand_btn.setArrowType(Qt.DownArrow if checked else Qt.RightArrow)
+		self.update_text_edit_height()
 		
 	def on_text_changed(self):
 		if self.text_edit.toPlainText() != self.message['content']:
 			self.confirm_btn.setVisible(True)
-			self.text_edit.setStyleSheet("border: 3px solid rgba(0, 0, 255, 0.3);")
+			# self.text_edit.setStyleSheet("border: 3px solid rgba(0, 0, 255, 0.3);")
+			self.text_edit.setStyleSheet("QTextEdit {border: 3px solid rgba(0, 0, 255, 0.3);}")
+
 		else:
 			self.confirm_btn.setVisible(False)
 			self.text_edit.setStyleSheet("")
+			
+		if self.expand_btn.isChecked():
+			self.text_edit.setMinimumHeight(int(self.text_edit.document().size().height()))
+			self.text_edit.updateGeometry()
+			self.rowHeightChanged.emit()
 		
 	def delete_message(self):
 		pass
@@ -110,6 +128,7 @@ class ChatUI(QWidget):
 
 		self.list_view = QListWidget()
 		self.list_view.setAutoScroll(False)
+		self.list_view.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
 		self.layout.addWidget(self.list_view)
 		
 		self.input_layout = QHBoxLayout()
@@ -163,11 +182,16 @@ class ChatUI(QWidget):
 		
 		self.list_view.clearSelection()
 		
+	def update_row_height(self, item: QListWidgetItem):
+		item_widget = self.list_view.itemWidget(item)
+		item.setSizeHint(QSize(item_widget.sizeHint().width(), item_widget.sizeHint().height()))
+		
 	def add_message(self, message: Message):
 		# self.conversation.add_message(message)
 		item = QListWidgetItem()
 		item_widget = MessageView(message, self)
 		item_widget.delete_btn.clicked.connect(self.delete_message)
+		item_widget.rowHeightChanged.connect(lambda: self.update_row_height(item))
 		item.setSizeHint(item_widget.sizeHint())
 		self.list_view.addItem(item)
 		self.list_view.setItemWidget(item, item_widget)
@@ -184,19 +208,13 @@ class ChatUI(QWidget):
 			self.send_button.click()
 		else:
 			super().keyPressEvent(event)
-			
+	
 	def adjust_input_field_size(self):
 		"""Adjust the height of the input field to fit the text up to max lines"""
 		n_lines = self.input_field.document().blockCount()
 		lines_to_show = min(n_lines, self.max_new_message_lines)
 		new_height = self.input_field.fontMetrics().lineSpacing() * lines_to_show + 10
 		self.input_field.setMaximumHeight(int(new_height))
-		
-		 # Adjust the height of the rows in the message view
-		for i in range(self.list_view.count()):
-			item = self.list_view.item(i)
-			item_widget = self.list_view.itemWidget(item)
-			item.setSizeHint(QSize(item_widget.sizeHint().width(), item_widget.sizeHint().height()))
 
 		if n_lines >= self.max_new_message_lines:
 			self.input_field.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
