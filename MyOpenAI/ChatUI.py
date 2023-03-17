@@ -4,17 +4,53 @@ from .Conversation import Conversation, Message
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem, QFrame
 from PyQt5.QtCore import Qt
 
+from PyQt5.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QSizePolicy, QToolButton
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QIcon, QPixmap, QImage, QTextOption
+
 class MessageView(QFrame):
-	def __init__(self, message: Message):
-		super().__init__()
+    def __init__(self, message: Message):
+        super().__init__()
 
-		self.layout = QVBoxLayout()
-		self.setLayout(self.layout)
+        self.message = message
 
-		self.label = QLabel()
-		self.label.setText(f"{message['role']}: {message['content']}")
-		self.label.setWordWrap(True)
-		self.layout.addWidget(self.label)
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+
+        # Role (and optional name) label
+        self.role_label = QLabel()
+        if 'name' in message.json:
+            self.role_label.setText(f"{message['role']} ({message['name']}):")
+        else:
+            self.role_label.setText(f"{message['role']}:")
+        self.role_label.setFixedWidth(100)
+        self.role_label.setWordWrap(True)
+        self.layout.addWidget(self.role_label)
+
+        # Editable text box
+        self.text_edit = QTextEdit()
+        self.text_edit.setPlainText(message['content'])
+        self.text_edit.setLineWrapMode(QTextEdit.WidgetWidth)
+        self.text_edit.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
+        self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.layout.addWidget(self.text_edit)
+
+        # Expand message view button
+        self.expand_btn = QToolButton()
+        self.expand_btn.setCheckable(True)
+        self.expand_btn.setIcon(QIcon(QPixmap.fromImage(QImage("path/to/triangle_icon.png")))) # Replace with the actual path to the triangle icon
+        self.expand_btn.toggled.connect(self.toggle_expand)
+        self.layout.addWidget(self.expand_btn)
+
+    def toggle_expand(self, checked):
+        if checked:
+            self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self.expand_btn.setArrowType(Qt.DownArrow)
+        else:
+            self.text_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            self.expand_btn.setArrowType(Qt.RightArrow)
+        self.text_edit.updateGeometry()
+
 
 class ChatUI(QWidget):
 	def __init__(self, conversation: Conversation):
