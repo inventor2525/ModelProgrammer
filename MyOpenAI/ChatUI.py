@@ -5,22 +5,37 @@ from PyQt5.QtWidgets import QListWidget, QListWidgetItem, QFrame, QAbstractItemV
 from PyQt5.QtCore import Qt
 
 from PyQt5.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QSizePolicy, QToolButton
-from PyQt5.QtCore import Qt, QSize, QPoint, QSettings, QByteArray, pyqtSignal
-from PyQt5.QtGui import QIcon, QPixmap, QImage, QTextOption, QColor, QPalette
+from PyQt5.QtCore import Qt, QSize, QPoint, QSettings, QByteArray, pyqtSignal, QRect
+from PyQt5.QtGui import QIcon, QPixmap, QImage, QTextOption, QColor, QPalette, QPainter
 
-class MessageView(QFrame):
-	rowHeightChanged = pyqtSignal()
-	def set_widget_background(self, widget, color):
-		widget.setAutoFillBackground(True)
-		palette = widget.palette()
-		palette.setColor(QPalette.Background, color)
-		widget.setPalette(palette)
+class ColoredFrame(QFrame):
+	def __init__(self, background_color, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.background_color = background_color
+		self.selected = False
+
+	def paintEvent(self, event):
+		painter = QPainter(self)
+		if self.selected:
+			painter.fillRect(QRect(0, 0, self.width(), self.height()), QColor(100, 100, 255, 50))
+		else:
+			painter.fillRect(QRect(0, 0, self.width(), self.height()), self.background_color)
+		super().paintEvent(event)
+
+	def set_selected(self, selected):
+		self.selected = selected
+		self.update()
 		
+class MessageView(ColoredFrame):
+	rowHeightChanged = pyqtSignal()
+	
 	def __init__(self, message: Message, parent=None):
-		super().__init__(parent)
+		background_color = parent.color_palette.get(message.full_role, QColor(Qt.white))
+		super().__init__(background_color, parent)
+		
 		self.parent = parent
 		self.list_view = parent.list_view
-		
+		self.setAutoFillBackground(True)
 		self.message = message
 
 		# rowHeightChanged = pyqtSignal()
@@ -31,14 +46,14 @@ class MessageView(QFrame):
 		self.color_palette = parent.color_palette
 
 		# Set background color for the row
-		background_color = self.color_palette.get(message.full_role, QColor(Qt.white))
-		background_color = self.color_palette.get(message.full_role, QColor(Qt.white))
-		self.set_widget_background(self, background_color)
+		# background_color = self.color_palette.get(message.full_role, QColor(Qt.green))
 		
-		self.setAutoFillBackground(True)
-		palette = self.palette()
-		palette.setColor(QPalette.Background, background_color)
-		self.setPalette(palette)
+		# self.set_widget_background(self, background_color)
+		
+		# self.setAutoFillBackground(True)
+		# palette = self.palette()
+		# palette.setColor(QPalette.Background, background_color)
+		# self.setPalette(palette)
 
 		# Role (and optional name) label
 		self.role_label = QLabel()
@@ -164,6 +179,14 @@ class ChatUI(QWidget):
 		self.layout.addLayout(self.input_layout)
 		self.input_field.setMinimumHeight(self.send_button.sizeHint().height())
 		
+		self.list_view.itemSelectionChanged.connect(self.update_selection)
+
+	def update_selection(self):
+		for index in range(self.list_view.count()):
+			item = self.list_view.item(index)
+			message_view = self.list_view.itemWidget(item)
+			message_view.set_selected(item.isSelected())
+		
 	def read_settings(self):
 		settings = QSettings("MyCompany", "MyApp")
 		self.restoreGeometry(settings.value("geometry", QByteArray()))
@@ -184,7 +207,7 @@ class ChatUI(QWidget):
 
 			# Assign colors to message types
 			for i, message_type in enumerate(sorted(message_types)):
-				color = QColor.fromHsv((i * 30) % 360, 255, 230)
+				color = QColor.fromHsv((i * 30) % 360, 90, 255)
 				self._color_palette[message_type] = color
 
 		return self._color_palette
@@ -207,10 +230,12 @@ class ChatUI(QWidget):
 		row = self.list_view.currentRow()
 		item = self.list_view.takeItem(row)
 
-		message_widget = item.data(Qt.UserRole)
-		message_to_remove = message_widget.message
-		self.conversation.messages.remove(message_to_remove)
-		
+		if item is not None:
+			message_widget = item.data(Qt.UserRole)
+			if message_widget is not None:
+				message_to_remove = message_widget.message
+				self.conversation.messages.remove(message_to_remove)
+
 		self.list_view.clearSelection()
 		
 	def update_row_height(self, item: QListWidgetItem):
