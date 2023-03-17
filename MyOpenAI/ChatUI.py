@@ -165,6 +165,8 @@ class ChatUI(QWidget):
 		self.list_view = QListWidget()
 		self.list_view.setAutoScroll(False)
 		self.list_view.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+		self.list_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
+		self.list_view.itemSelectionChanged.connect(self.update_selection)
 		self.layout.addWidget(self.list_view)
 		
 		self.input_layout = QHBoxLayout()
@@ -186,13 +188,12 @@ class ChatUI(QWidget):
 		self.layout.addLayout(self.input_layout)
 		self.input_field.setMinimumHeight(self.send_button.sizeHint().height())
 		
-		self.list_view.itemSelectionChanged.connect(self.update_selection)
-
 	def update_selection(self):
 		for index in range(self.list_view.count()):
 			item = self.list_view.item(index)
 			message_view = self.list_view.itemWidget(item)
-			message_view.set_selected(item.isSelected())
+			if message_view is not None:
+				message_view.set_selected(item.isSelected())
 		
 	def read_settings(self):
 		settings = QSettings("MyCompany", "MyApp")
@@ -284,6 +285,8 @@ class ChatUI(QWidget):
 					self.delete_message(item_widget)
 		elif event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:
 			self.send_button.click()
+		elif event.key() == Qt.Key_Escape:
+			self.list_view.clearSelection()
 		else:
 			super().keyPressEvent(event)
 	
