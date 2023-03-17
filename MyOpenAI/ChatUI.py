@@ -33,26 +33,10 @@ class MessageView(ColoredFrame):
 		super().__init__(background_color, parent)
 		
 		self.parent = parent
-		self.list_view = parent.list_view
-		#self.setAutoFillBackground(True)
 		self.message = message
-
-		# rowHeightChanged = pyqtSignal()
 		
 		self.layout = QHBoxLayout()
 		self.setLayout(self.layout)
-		
-		self.color_palette = parent.color_palette
-
-		# Set background color for the row
-		# background_color = self.color_palette.get(message.full_role, QColor(Qt.green))
-		
-		# self.set_widget_background(self, background_color)
-		
-		# self.setAutoFillBackground(True)
-		# palette = self.palette()
-		# palette.setColor(QPalette.Background, background_color)
-		# self.setPalette(palette)
 
 		# Role (and optional name) label
 		self.role_label = QLabel()
@@ -135,10 +119,10 @@ class MessageView(ColoredFrame):
 	def confirm_changes(self):
 		pass
 
-
-class ChatUI(QWidget):
-	def __init__(self, conversation: Conversation, max_new_message_lines=5):
-		super().__init__()
+class ConversationView(QListWidget):
+	def __init__(self, conversation: Conversation, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		
 		self.colors = QColor.colorNames()#  ['red', 'green', 'blue', 'yellow', 'cyan', 'magenta', 'gray']
 		
 		self._color_palette = {
@@ -147,14 +131,104 @@ class ChatUI(QWidget):
 			"user terminal": "#FFEBE4",
 			"assistant": "#FFC4B0",
 		}
+		
+		self.conversation = conversation
+		
+		for message in conversation.messages:
+			self._render_message(message)
+			
+		self.setAutoScroll(False)
+		self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+		self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+		self.itemSelectionChanged.connect(self.update_selection)
+	
+	@property
+	def color_palette(self):
+		if not hasattr(self, '_color_palette') or self._color_palette is None:
+			self._color_palette = {}
+			message_types = set()
+
+			# Extract message types from the messages in the conversation
+			for message in self.conversation.messages:
+				message_types.add(message.full_role.lower())
+
+			# Assign colors to message types
+			for i, message_type in enumerate(sorted(message_types)):
+				message_type = message_type.lower()
+				self._color_palette[message_type] = self.colors[i % len(self.colors)]
+
+		return self._color_palette
+		
+	def update_selection(self):
+		for index in range(self.count()):
+			item = self.item(index)
+			message_view = self.itemWidget(item)
+			if message_view is not None:
+				message_view.set_selected(item.isSelected())
+	
+	def keyPressEvent(self, event):
+		item_widget = self.itemWidget(self.currentItem())
+		if event.key() == Qt.Key_Delete and not item_widget.text_edit.hasFocus():
+			#if selection is not empty, delete all selected messages
+			if self.selectedItems():
+				for item in self.selectedItems():
+					item_widget = self.itemWidget(item)
+					self.delete_message(item_widget)
+		elif event.key() == Qt.Key_Escape:
+			self.clearSelection()
+		else:
+			super().keyPressEvent(event)
+	
+	def delete_message(self, message_widget): #TODO: this needs to take a message not a widget
+		if message_widget is not None:
+			item = None
+			for index in range(self.count()):
+				current_item = self.item(index)
+				if self.itemWidget(current_item) == message_widget:
+					item = current_item
+					break
+
+			if item is not None:
+				row = self.row(item)
+				item = self.takeItem(row)
+
+				message_to_remove = message_widget.message
+				self.conversation.messages.remove(message_to_remove)
+				
+				self.clearSelection()
+	
+	def _render_message(self, message: Message):
+		message_type = message.full_role.lower()
+		if message_type not in self.color_palette:
+			self._color_palette[message_type] = self.colors[len(self._color_palette) % len(self.colors)]
+			
+		item = QListWidgetItem()
+		item_widget = MessageView(message, self)
+		item_widget.rowHeightChanged.connect(lambda: self.update_row_height(item))
+		item.setSizeHint(item_widget.sizeHint())
+		self.addItem(item)
+		self.setItemWidget(item, item_widget)
+		self.scrollToBottom()
+				
+	def add_message(self, message: Message):
+		self.conversation.add_message(message)
+		self._render_message(message)
+		
+	def update_row_height(self, item: QListWidgetItem):
+		item_widget = self.itemWidget(item)
+		item.setSizeHint(QSize(item_widget.sizeHint().width(), item_widget.sizeHint().height()))
+			
+class ChatUI(QWidget):
+	def __init__(self, conversation: Conversation, max_new_message_lines=5):
+		super().__init__()
+		
 		self.conversation = conversation
 		self.max_new_message_lines = max_new_message_lines
+		self.num_lines = 0
+		
 		self.init_ui()
-		for message in conversation.messages:
-			self.add_message(message)
 		
 		self.read_settings()
-		self.num_lines = 0
 
 	def init_ui(self):
 		self.setWindowTitle('Chat')
@@ -162,11 +236,7 @@ class ChatUI(QWidget):
 		self.layout = QVBoxLayout()
 		self.setLayout(self.layout)
 
-		self.list_view = QListWidget()
-		self.list_view.setAutoScroll(False)
-		self.list_view.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
-		self.list_view.setSelectionMode(QAbstractItemView.ExtendedSelection)
-		self.list_view.itemSelectionChanged.connect(self.update_selection)
+		self.list_view = ConversationView(self.conversation)
 		self.layout.addWidget(self.list_view)
 		
 		self.input_layout = QHBoxLayout()
@@ -188,13 +258,6 @@ class ChatUI(QWidget):
 		self.layout.addLayout(self.input_layout)
 		self.input_field.setMinimumHeight(self.send_button.sizeHint().height())
 		
-	def update_selection(self):
-		for index in range(self.list_view.count()):
-			item = self.list_view.item(index)
-			message_view = self.list_view.itemWidget(item)
-			if message_view is not None:
-				message_view.set_selected(item.isSelected())
-		
 	def read_settings(self):
 		settings = QSettings("MyCompany", "MyApp")
 		self.restoreGeometry(settings.value("geometry", QByteArray()))
@@ -202,25 +265,7 @@ class ChatUI(QWidget):
 	def write_settings(self):
 		settings = QSettings("MyCompany", "MyApp")
 		settings.setValue("geometry", self.saveGeometry())
-	
-	@property
-	def color_palette(self):
-		if not hasattr(self, '_color_palette') or self._color_palette is None:
-			self._color_palette = {}
-			message_types = set()
-
-			# Extract message types from the messages in the conversation
-			for message in self.conversation.messages:
-				message_types.add(message.full_role.lower())
-
-			# Assign colors to message types
-			for i, message_type in enumerate(sorted(message_types)):
-				message_type = message_type.lower()
-				self._color_palette[message_type] = self.colors[i % len(self.colors)]
-
-		return self._color_palette
-
-
+		
 	def send_message(self):
 		message_text = self.input_field.text().strip()
 		if message_text:
@@ -233,60 +278,14 @@ class ChatUI(QWidget):
 			response_text = "Assistant's response to: " + message_text
 			response = Message.from_role_content("assistant", response_text)
 			self.add_message(response)
-			
-	def delete_message(self, message_widget):
-		if message_widget is not None:
-			item = None
-			for index in range(self.list_view.count()):
-				current_item = self.list_view.item(index)
-				if self.list_view.itemWidget(current_item) == message_widget:
-					item = current_item
-					break
-
-			if item is not None:
-				row = self.list_view.row(item)
-				item = self.list_view.takeItem(row)
-
-				message_to_remove = message_widget.message
-				self.conversation.messages.remove(message_to_remove)
-				
-				self.list_view.clearSelection()
-
-		
-	def update_row_height(self, item: QListWidgetItem):
-		item_widget = self.list_view.itemWidget(item)
-		item.setSizeHint(QSize(item_widget.sizeHint().width(), item_widget.sizeHint().height()))
-		
-	def add_message(self, message: Message):
-		message_type = message.full_role.lower()
-		if message_type not in self.color_palette:
-			self._color_palette[message_type] = self.colors[len(self._color_palette) % len(self.colors)]
-			
-		# self.conversation.add_message(message)
-		item = QListWidgetItem()
-		item_widget = MessageView(message, self)
-		item_widget.rowHeightChanged.connect(lambda: self.update_row_height(item))
-		item.setSizeHint(item_widget.sizeHint())
-		self.list_view.addItem(item)
-		self.list_view.setItemWidget(item, item_widget)
-		self.list_view.scrollToBottom()
 		
 	def closeEvent(self, event):
 		self.write_settings()
 		super().closeEvent(event)
 		
 	def keyPressEvent(self, event):
-		item_widget = self.list_view.itemWidget(self.list_view.currentItem())
-		if event.key() == Qt.Key_Delete and not item_widget.text_edit.hasFocus():
-			#if selection is not empty, delete all selected messages
-			if self.list_view.selectedItems():
-				for item in self.list_view.selectedItems():
-					item_widget = self.list_view.itemWidget(item)
-					self.delete_message(item_widget)
-		elif event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:
+		if event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:
 			self.send_button.click()
-		elif event.key() == Qt.Key_Escape:
-			self.list_view.clearSelection()
 		else:
 			super().keyPressEvent(event)
 	
