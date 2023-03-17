@@ -5,9 +5,17 @@ import json
 import datetime
 from typing import List, Dict
 
-get_hash = lambda x: hashlib.sha256(str(x).encode("utf-8")).hexdigest()
-
-class Message():
+class Hashable():
+	def __init__(self):
+		self.hash = ""
+	
+	def _recompute_hash(self):
+		raise NotImplementedError()
+		
+	def _compute_hash(self, x:object) -> str:
+		return hashlib.sha256(str(x).encode("utf-8")).hexdigest()
+		
+class Message(Hashable):
 	def __init__(self, data:Dict[str, str], date=None):
 		self.json = data
 		if date is None:
@@ -15,7 +23,10 @@ class Message():
 				self.date = datetime.datetime.fromtimestamp(int(data["created"]))
 			else:
 				self.date = datetime.datetime.now()
-		self.hash = get_hash(json.dumps(self.json))
+		self._recompute_hash()
+		
+	def _recompute_hash(self):
+		self.hash = self._compute_hash(json.dumps(self.json))
 	
 	@classmethod
 	def from_role_content(cls, role:str, content:str):
@@ -30,7 +41,7 @@ class Message():
 	def __getitem__(self, key):
 		return self.json[key]
 
-class Conversation():
+class Conversation(Hashable):
 	def __init__(self, messages:List[Message]):
 		self.messages = messages
 		self.hash = ""
@@ -44,7 +55,7 @@ class Conversation():
 		return [message.hash for message in self.messages]
 		
 	def _recompute_hash(self):
-		self.hash = get_hash(self.hashes)
+		self.hash = self._compute_hash(self.hashes)
 	
 	@classmethod
 	def from_list(cls, messages:List[Dict[str, str]]):
