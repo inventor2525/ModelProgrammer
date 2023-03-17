@@ -15,11 +15,10 @@ class ColoredFrame(QFrame):
 		self.selected = False
 
 	def paintEvent(self, event):
-		painter = QPainter(self)
-		if self.selected:
-			painter.fillRect(QRect(0, 0, self.width(), self.height()), QColor(100, 100, 255, 50))
-		else:
+		if not self.selected:
+			painter = QPainter(self)
 			painter.fillRect(QRect(0, 0, self.width(), self.height()), self.background_color)
+			
 		super().paintEvent(event)
 
 	def set_selected(self, selected):
@@ -30,12 +29,12 @@ class MessageView(ColoredFrame):
 	rowHeightChanged = pyqtSignal()
 	
 	def __init__(self, message: Message, parent=None):
-		background_color = parent.color_palette.get(message.full_role, QColor(Qt.white))
+		background_color = QColor( parent.color_palette.get(message.full_role.lower(), QColor(Qt.white)) )
 		super().__init__(background_color, parent)
 		
 		self.parent = parent
 		self.list_view = parent.list_view
-		self.setAutoFillBackground(True)
+		#self.setAutoFillBackground(True)
 		self.message = message
 
 		# rowHeightChanged = pyqtSignal()
@@ -82,7 +81,8 @@ class MessageView(ColoredFrame):
 		self.delete_btn.clicked.connect(self.delete_message)
 		self.delete_btn.setFixedWidth(25)
 		self.panel_layout.addWidget(self.delete_btn, alignment=Qt.AlignTop)
-
+		self.delete_btn.clicked.connect(lambda: self.parent.delete_message(self))
+		
 		# Confirm button (checkmark)
 		self.confirm_btn = QPushButton("✓")
 		self.confirm_btn.clicked.connect(self.confirm_changes)
@@ -139,7 +139,14 @@ class MessageView(ColoredFrame):
 class ChatUI(QWidget):
 	def __init__(self, conversation: Conversation, max_new_message_lines=5):
 		super().__init__()
-
+		self.colors = QColor.colorNames()#  ['red', 'green', 'blue', 'yellow', 'cyan', 'magenta', 'gray']
+		
+		self._color_palette = {
+			"system": "lightgrey",
+			"user human": "#9DFFA6",
+			"user terminal": "#FFEBE4",
+			"assistant": "#FFC4B0",
+		}
 		self.conversation = conversation
 		self.max_new_message_lines = max_new_message_lines
 		self.init_ui()
@@ -203,12 +210,12 @@ class ChatUI(QWidget):
 
 			# Extract message types from the messages in the conversation
 			for message in self.conversation.messages:
-				message_types.add(message.full_role)
+				message_types.add(message.full_role.lower())
 
 			# Assign colors to message types
 			for i, message_type in enumerate(sorted(message_types)):
-				color = QColor.fromHsv((i * 30) % 360, 90, 255)
-				self._color_palette[message_type] = color
+				message_type = message_type.lower()
+				self._color_palette[message_type] = self.colors[i % len(self.colors)]
 
 		return self._color_palette
 
@@ -226,31 +233,37 @@ class ChatUI(QWidget):
 			response = Message.from_role_content("assistant", response_text)
 			self.add_message(response)
 			
-	def delete_message(self):
-		row = self.list_view.currentRow()
-		item = self.list_view.takeItem(row)
+	def delete_message(self, message_widget):
+		if message_widget is not None:
+			item = None
+			for index in range(self.list_view.count()):
+				current_item = self.list_view.item(index)
+				if self.list_view.itemWidget(current_item) == message_widget:
+					item = current_item
+					break
 
-		if item is not None:
-			message_widget = item.data(Qt.UserRole)
-			if message_widget is not None:
+			if item is not None:
+				row = self.list_view.row(item)
+				item = self.list_view.takeItem(row)
+
 				message_to_remove = message_widget.message
 				self.conversation.messages.remove(message_to_remove)
+				
+				self.list_view.clearSelection()
 
-		self.list_view.clearSelection()
 		
 	def update_row_height(self, item: QListWidgetItem):
 		item_widget = self.list_view.itemWidget(item)
 		item.setSizeHint(QSize(item_widget.sizeHint().width(), item_widget.sizeHint().height()))
 		
 	def add_message(self, message: Message):
-		message_type = message.full_role
+		message_type = message.full_role.lower()
 		if message_type not in self.color_palette:
-			self.color_palette[message_type] = QColor.fromHsv((len(self.color_palette) * 30) % 360, 255, 230)
-
+			self._color_palette[message_type] = self.colors[len(self._color_palette) % len(self.colors)]
+			
 		# self.conversation.add_message(message)
 		item = QListWidgetItem()
 		item_widget = MessageView(message, self)
-		item_widget.delete_btn.clicked.connect(self.delete_message)
 		item_widget.rowHeightChanged.connect(lambda: self.update_row_height(item))
 		item.setSizeHint(item_widget.sizeHint())
 		self.list_view.addItem(item)
@@ -262,8 +275,13 @@ class ChatUI(QWidget):
 		super().closeEvent(event)
 		
 	def keyPressEvent(self, event):
-		if event.key() == Qt.Key_Delete and not self.list_view.itemWidget(self.list_view.currentItem()).text_edit.hasFocus():
-			self.delete_message()
+		item_widget = self.list_view.itemWidget(self.list_view.currentItem())
+		if event.key() == Qt.Key_Delete and not item_widget.text_edit.hasFocus():
+			#if selection is not empty, delete all selected messages
+			if self.list_view.selectedItems():
+				for item in self.list_view.selectedItems():
+					item_widget = self.list_view.itemWidget(item)
+					self.delete_message(item_widget)
 		elif event.key() == Qt.Key_Enter and event.modifiers() == Qt.ControlModifier:
 			self.send_button.click()
 		else:
