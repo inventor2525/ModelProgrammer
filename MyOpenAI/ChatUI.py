@@ -4,9 +4,10 @@ from .Conversation import Conversation, Message
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem, QFrame, QAbstractItemView
 from PyQt5.QtCore import Qt
 
-from PyQt5.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QSizePolicy, QToolButton
+from PyQt5.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QCompleter, QLabel, QComboBox, QTextEdit, QSizePolicy, QToolButton
 from PyQt5.QtCore import Qt, QSize, QPoint, QSettings, QByteArray, pyqtSignal, QRect
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QTextOption, QColor, QPalette, QPainter
+from typing import Dict, List, Tuple, Optional, Union, Callable, Any
 
 class ColoredFrame(QFrame):
 	def __init__(self, background_color, *args, **kwargs):
@@ -217,12 +218,49 @@ class ConversationView(QListWidget):
 	def update_row_height(self, item: QListWidgetItem):
 		item_widget = self.itemWidget(item)
 		item.setSizeHint(QSize(item_widget.sizeHint().width(), item_widget.sizeHint().height()))
+
+class RoleComboBox(QComboBox):
+	def __init__(self, values:List[str], default_value:str="Human", *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.setEditable(True)
+		self.default_value = default_value
+		self.addItems(values)
+		self.set_default_value()
+		#do not auto complete
+		self.completer().setCompletionMode(QCompleter.UnfilteredPopupCompletion)
+		self.setInsertPolicy(QComboBox.NoInsert)
+
+	def focusOutEvent(self, event):
+		current_text = self.currentText()
+		index = -1
+
+		for i in range(self.count()):
+			if self.itemText(i).lower() == current_text.lower():
+				index = i
+				break
+
+		if index != -1:
+			self.setCurrentIndex(index)
+		else:
+			self.setEditText(current_text)
+
+		super().focusOutEvent(event)
+		
+	def set_default_value(self):
+		index = self.findText(self.default_value)
+		if index != -1:
+			self.setCurrentIndex(index)
 			
 class ChatUI(QWidget):
-	def __init__(self, conversation: Conversation, max_new_message_lines=5):
+	#qt signal for sending messages
+	message_sent = pyqtSignal(Conversation, Message)
+	
+	def __init__(self, conversation: Conversation, roles:List[str], max_new_message_lines=5):
 		super().__init__()
 		
 		self.conversation = conversation
+		self.roles = roles
+		
 		self.max_new_message_lines = max_new_message_lines
 		self.num_lines = 0
 		
@@ -240,6 +278,8 @@ class ChatUI(QWidget):
 		self.layout.addWidget(self.list_view)
 		
 		self.input_layout = QHBoxLayout()
+		self.role_combobox = RoleComboBox(self.roles, default_value="Human")
+		self.input_layout.addWidget(self.role_combobox, alignment=Qt.AlignBottom)
 
 		self.input_field = QTextEdit()
 		size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
@@ -249,7 +289,7 @@ class ChatUI(QWidget):
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.input_field.textChanged.connect(self.adjust_input_field_size)
 		self.input_field.setPlaceholderText("Type your message here...")
-		self.input_layout.addWidget(self.input_field)
+		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
 
 		self.send_button = QPushButton('Send')
 		self.send_button.clicked.connect(self.send_message)
@@ -267,17 +307,17 @@ class ChatUI(QWidget):
 		settings.setValue("geometry", self.saveGeometry())
 		
 	def send_message(self):
-		message_text = self.input_field.text().strip()
+		message_text = self.input_field.toPlainText()
 		if message_text:
-			message = Message.from_role_content("user", message_text)
-			self.add_message(message)
+			message = Message.from_role_content(self.role_combobox.currentText(), message_text)
+			self.list_view.add_message(message)
+			
+			self.message_sent.emit(
+				self.conversation, 
+				message
+			)
+			
 			self.input_field.clear()
-
-			# Handle response from the chat bot and render the assistant's message
-			# Here's a placeholder example:
-			response_text = "Assistant's response to: " + message_text
-			response = Message.from_role_content("assistant", response_text)
-			self.add_message(response)
 		
 	def closeEvent(self, event):
 		self.write_settings()

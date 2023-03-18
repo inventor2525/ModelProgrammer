@@ -25,7 +25,13 @@ if __name__ == '__main__':
 		
 	])
 
-	chat_ui = ChatUI(conversation)
+	chat_ui = ChatUI(conversation, [
+		"Assistant",
+		"System",
+		"User",
+		"Terminal",
+		"Human"
+	])
 	chat_ui.show()
 	
 	

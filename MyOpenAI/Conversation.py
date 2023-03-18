@@ -30,6 +30,7 @@ class Message(Hashable):
 	
 	@classmethod
 	def from_role_content(cls, role:str, content:str):
+		role = role.lower()
 		if role in ["user", "assistant", "system"]:
 			return cls({"role":role, "content":content})
 		else:
