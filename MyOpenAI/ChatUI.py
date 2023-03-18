@@ -229,22 +229,6 @@ class RoleComboBox(QComboBox):
 		#do not auto complete
 		self.completer().setCompletionMode(QCompleter.UnfilteredPopupCompletion)
 		self.setInsertPolicy(QComboBox.NoInsert)
-
-	def focusOutEvent(self, event):
-		current_text = self.currentText()
-		index = -1
-
-		for i in range(self.count()):
-			if self.itemText(i).lower() == current_text.lower():
-				index = i
-				break
-
-		if index != -1:
-			self.setCurrentIndex(index)
-		else:
-			self.setEditText(current_text)
-
-		super().focusOutEvent(event)
 		
 	def set_default_value(self):
 		index = self.findText(self.default_value)
