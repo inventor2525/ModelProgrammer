@@ -4,7 +4,7 @@ from .Conversation import Conversation, Message
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem, QFrame, QAbstractItemView
 from PyQt5.QtCore import Qt
 
-from PyQt5.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QCompleter, QLabel, QComboBox, QTextEdit, QSizePolicy, QToolButton
+from PyQt5.QtWidgets import QFrame, QCheckBox, QVBoxLayout, QHBoxLayout, QCompleter, QLabel, QComboBox, QTextEdit, QSizePolicy, QToolButton
 from PyQt5.QtCore import Qt, QSize, QPoint, QSettings, QByteArray, pyqtSignal, QRect
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QTextOption, QColor, QPalette, QPainter
 from typing import Dict, List, Tuple, Optional, Union, Callable, Any
@@ -28,6 +28,7 @@ class ColoredFrame(QFrame):
 		
 class MessageView(ColoredFrame):
 	rowHeightChanged = pyqtSignal()
+	message_changed = pyqtSignal(Message, str) # Message, old hash
 	
 	def __init__(self, message: Message, parent=None):
 		background_color = QColor( parent.color_palette.get(message.full_role.lower(), QColor(Qt.white)) )
@@ -118,9 +119,17 @@ class MessageView(ColoredFrame):
 		pass
 
 	def confirm_changes(self):
-		pass
+		old_hash = self.message.hash
+		self.message.json['content'] = self.text_edit.toPlainText()
+		self.confirm_btn.setVisible(False)
+		self.text_edit.setStyleSheet("")
+		self.message.recompute_hash()
+		
+		self.message_changed.emit(self.message, old_hash)
 
 class ConversationView(QListWidget):
+	message_changed = pyqtSignal(Message, str) # Message, old hash
+	
 	def __init__(self, conversation: Conversation, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		
@@ -206,6 +215,11 @@ class ConversationView(QListWidget):
 		item = QListWidgetItem()
 		item_widget = MessageView(message, self)
 		item_widget.rowHeightChanged.connect(lambda: self.update_row_height(item))
+		def message_changed(message: Message, old_hash: str):
+			self.message_changed.emit(message, old_hash)
+			self.conversation.recompute_hash()
+			self.update_row_height(item)
+		item_widget.message_changed.connect(message_changed)
 		item.setSizeHint(item_widget.sizeHint())
 		self.addItem(item)
 		self.setItemWidget(item, item_widget)
@@ -237,7 +251,8 @@ class RoleComboBox(QComboBox):
 			
 class ChatUI(QWidget):
 	#qt signal for sending messages
-	message_sent = pyqtSignal(Conversation, Message)
+	message_added = pyqtSignal(Conversation, Message, bool)
+	message_changed = pyqtSignal(Message, str) # Message, old hash
 	
 	def __init__(self, conversation: Conversation, roles:List[str], max_new_message_lines=5):
 		super().__init__()
@@ -259,6 +274,7 @@ class ChatUI(QWidget):
 		self.setLayout(self.layout)
 
 		self.list_view = ConversationView(self.conversation)
+		self.list_view.message_changed.connect(self.message_changed.emit)
 		self.layout.addWidget(self.list_view)
 		
 		self.input_layout = QHBoxLayout()
@@ -274,9 +290,15 @@ class ChatUI(QWidget):
 		self.input_field.textChanged.connect(self.adjust_input_field_size)
 		self.input_field.setPlaceholderText("Type your message here...")
 		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
-
+		
 		self.send_button = QPushButton('Send')
 		self.send_button.clicked.connect(self.send_message)
+		
+		self.send_add_toggle = QCheckBox()
+		self.send_add_toggle.setCheckState(Qt.Checked)
+		self.send_add_toggle.stateChanged.connect(lambda: self.send_button.setText("Send" if self.send_add_toggle.isChecked() else "Add"))
+		self.input_layout.addWidget(self.send_add_toggle, alignment=Qt.AlignBottom)
+		
 		self.input_layout.addWidget(self.send_button, alignment=Qt.AlignBottom)
 		
 		self.layout.addLayout(self.input_layout)
@@ -296,9 +318,10 @@ class ChatUI(QWidget):
 			message = Message.from_role_content(self.role_combobox.currentText(), message_text)
 			self.list_view.add_message(message)
 			
-			self.message_sent.emit(
+			self.message_added.emit(
 				self.conversation, 
-				message
+				message,
+				self.send_add_toggle.isChecked()
 			)
 			
 			self.input_field.clear()
@@ -330,3 +353,6 @@ class ChatUI(QWidget):
 		if self.num_lines < n_lines:
 			self.input_field.verticalScrollBar().setValue(self.input_field.verticalScrollBar().maximum())
 		self.num_lines = n_lines
+	
+	def add_message(self, message:Message):
+		self.list_view.add_message(message)

@@ -22,3 +22,14 @@
 
 1. speech to text
 1. text to speech
+
+
+
+
+
+
+
+
+
+
+make it commit all changes to fields when sending if there are any un-saved

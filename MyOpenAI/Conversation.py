@@ -9,7 +9,7 @@ class Hashable():
 	def __init__(self):
 		self.hash = ""
 	
-	def _recompute_hash(self):
+	def recompute_hash(self):
 		raise NotImplementedError()
 		
 	def _compute_hash(self, x:object) -> str:
@@ -23,9 +23,9 @@ class Message(Hashable):
 				self.date = datetime.datetime.fromtimestamp(int(data["created"]))
 			else:
 				self.date = datetime.datetime.now()
-		self._recompute_hash()
+		self.recompute_hash()
 		
-	def _recompute_hash(self):
+	def recompute_hash(self) -> str:
 		self.hash = self._compute_hash(json.dumps(self.json))
 	
 	@classmethod
@@ -38,10 +38,26 @@ class Message(Hashable):
 	
 	@property
 	def full_role(self):
+		if "role" not in self.json:
+			return None
 		role = self.json['role']
 		if 'name' in self.json:
 			return f"{role} {self.json['name']}".strip()
 		return role.strip()
+	
+	@property
+	def short_role(self):
+		if 'name' in self.json:
+			return self.json['name']
+		else:
+			return self.json['role']
+	
+	@property
+	def content(self):
+		if 'content' in self.json:
+			return self.json['content']
+		else:
+			raise NotImplemented() #TODO: look into raw response to get it's content
 		
 	def __str__(self):
 		return json.dumps(self.json)
@@ -53,7 +69,7 @@ class Conversation(Hashable):
 	def __init__(self, messages:List[Message]):
 		self.messages = messages
 		self.hash = ""
-		self._recompute_hash()
+		self.recompute_hash()
 	
 	@property
 	def hashes(self):
@@ -62,7 +78,7 @@ class Conversation(Hashable):
 		"""
 		return [message.hash for message in self.messages]
 		
-	def _recompute_hash(self):
+	def recompute_hash(self):
 		self.hash = self._compute_hash(self.hashes)
 	
 	@classmethod
@@ -80,7 +96,7 @@ class Conversation(Hashable):
 	
 	def add_message(self, message:Message):
 		self.messages.append(message)
-		self._recompute_hash()
+		self.recompute_hash()
 		
 	def __str__(self):
 		return json.dumps([str(message) for message in self.messages])

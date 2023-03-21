@@ -1,4 +1,4 @@
-from MyOpenAI.Conversation import Conversation
+from MyOpenAI.Conversation import Conversation, Message
 from MyOpenAI.Terminal import Terminal
 from typing import List, Dict
 import tiktoken
@@ -49,7 +49,7 @@ class ChatBot:
 		return len(tokens)
 		
 	#send_messages using the chat function from MyOpenAI/Chatter.py and return json
-	async def send_conversation(self, conversation:Conversation, max_tokens:int=150) -> Dict:
+	async def send_conversation(self, conversation:Conversation, max_tokens:int=150) -> Dict[str,str]:
 		conversation_tokens = self.count_conversation_tokens(conversation)
 		max_tokens = min(4096 - conversation_tokens, max_tokens)
 		if max_tokens < 0: #TODO: get this limit per model type
