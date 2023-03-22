@@ -57,7 +57,16 @@ class Message(Hashable):
 		if 'content' in self.json:
 			return self.json['content']
 		else:
-			raise NotImplemented() #TODO: look into raw response to get it's content
+			if 'choices' in self.json:
+				return self.json['choices'][0]['message']['content']
+		return None
+	@content.setter
+	def content(self, value):
+		if 'content' in self.json:
+			self.json['content'] = value
+		else:
+			if 'choices' in self.json:
+				self.json['choices'][0]['message']['content'] = value
 		
 	def __str__(self):
 		return json.dumps(self.json)
