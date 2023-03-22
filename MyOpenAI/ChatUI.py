@@ -145,7 +145,7 @@ class ConversationView(QListWidget):
 		self.conversation = conversation
 		
 		for message in conversation.messages:
-			self._render_message(message)
+			self.render_message(message)
 			
 		self.setAutoScroll(False)
 		self.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
@@ -207,7 +207,7 @@ class ConversationView(QListWidget):
 				
 				self.clearSelection()
 	
-	def _render_message(self, message: Message):
+	def render_message(self, message: Message):
 		message_type = message.full_role.lower()
 		if message_type not in self.color_palette:
 			self._color_palette[message_type] = self.colors[len(self._color_palette) % len(self.colors)]
@@ -227,7 +227,7 @@ class ConversationView(QListWidget):
 				
 	def add_message(self, message: Message):
 		self.conversation.add_message(message)
-		self._render_message(message)
+		self.render_message(message)
 		
 	def update_row_height(self, item: QListWidgetItem):
 		item_widget = self.itemWidget(item)
@@ -316,7 +316,7 @@ class ChatUI(QWidget):
 		message_text = self.input_field.toPlainText()
 		if message_text:
 			message = Message.from_role_content(self.role_combobox.currentText(), message_text)
-			self.list_view.add_message(message)
+			self.list_view.render_message(message)
 			
 			self.message_added.emit(
 				self.conversation, 
@@ -354,5 +354,5 @@ class ChatUI(QWidget):
 			self.input_field.verticalScrollBar().setValue(self.input_field.verticalScrollBar().maximum())
 		self.num_lines = n_lines
 	
-	def add_message(self, message:Message):
-		self.list_view.add_message(message)
+	def render_message(self, message:Message):
+		self.list_view.render_message(message)

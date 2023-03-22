@@ -92,3 +92,22 @@ class ConversationDB():
 		
 		#Commit the changes to the database
 		self.connection.commit()
+
+	@property
+	def latest_conversation(self) -> str:
+		self.cursor.execute("SELECT hash FROM conversations order by datetime desc limit 1")
+		return self.cursor.fetchone()[0]
+	
+	def load_message(self, message_hash:str) -> Message:
+		self.cursor.execute("SELECT json FROM messages WHERE hash = ?", (message_hash,))
+		message_text = self.cursor.fetchone()
+		if message_text is None:
+			return None
+		return Message(json.loads(message_text[0]))
+		
+	def load_conversation(self, conversation_hash:str) -> Conversation:
+		self.cursor.execute("SELECT message_hashes FROM conversations WHERE hash = ?", (conversation_hash,))
+		message_hashes = self.cursor.fetchone()
+		if message_hashes is None:
+			return None
+		return Conversation([self.load_message(message_hash) for message_hash in json.loads(message_hashes[0]) if message_hash is not None])
