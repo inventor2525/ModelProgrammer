@@ -313,18 +313,18 @@ class ChatUI(QWidget):
 		settings.setValue("geometry", self.saveGeometry())
 		
 	def send_message(self):
+		message = None
+		
 		message_text = self.input_field.toPlainText()
-		if message_text:
-			message = Message.from_role_content(self.role_combobox.currentText(), message_text)
-			self.list_view.render_message(message)
+		message = Message.from_role_content(self.role_combobox.currentText(), message_text)
 			
-			self.message_added.emit(
-				self.conversation, 
-				message,
-				self.send_add_toggle.isChecked()
-			)
-			
-			self.input_field.clear()
+		self.message_added.emit(
+			self.conversation, 
+			message,
+			self.send_add_toggle.isChecked()
+		)
+		
+		self.input_field.clear()
 		
 	def closeEvent(self, event):
 		self.write_settings()

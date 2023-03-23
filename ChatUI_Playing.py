@@ -30,12 +30,13 @@ class Programmer():
 	def message_changed(self, message:Message, old_hash:str):
 		self.db.save_message(message, MessageType.Edit, old_hash)
 	
-	def message_added(self, conversation:Conversation, message:Message, should_send:bool):
-		self.db.save_message(message, MessageType.ManualEntry)
-		if len(conversation.messages)>0:
-			self.db.save_conversation(conversation)
-		
-		if message is not None:
+	def message_added(self, conversation:Conversation, message:Message, should_send:bool):		
+		if message is not None and len(message.content)>0:
+			self.db.save_message(message, MessageType.ManualEntry)
+			self.chat_ui.render_message(message)
+			if len(conversation.messages)>0:
+				self.db.save_conversation(conversation)
+				
 			conversation.add_message(message)
 		
 		self.db.save_conversation(conversation)
