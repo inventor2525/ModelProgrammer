@@ -253,6 +253,7 @@ class ChatUI(QWidget):
 	#qt signal for sending messages
 	message_added = pyqtSignal(Conversation, Message, bool)
 	message_changed = pyqtSignal(Message, str) # Message, old hash
+	confirm_command = pyqtSignal()
 	
 	def __init__(self, conversation: Conversation, roles:List[str], max_new_message_lines=5):
 		super().__init__()
@@ -264,9 +265,10 @@ class ChatUI(QWidget):
 		self.num_lines = 0
 		
 		self.init_ui()
+		self.has_unrun_command = False
 		
 		self.read_settings()
-
+		
 	def init_ui(self):
 		self.setWindowTitle('Chat')
 
@@ -288,6 +290,7 @@ class ChatUI(QWidget):
 		self.input_field.setMaximumHeight(self.input_field.fontMetrics().lineSpacing())
 		self.input_field.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
 		self.input_field.textChanged.connect(self.adjust_input_field_size)
+		self.input_field.textChanged.connect(self.update_send_button_text)
 		self.input_field.setPlaceholderText("Type your message here...")
 		self.input_layout.addWidget(self.input_field, alignment=Qt.AlignBottom)
 		
@@ -296,7 +299,7 @@ class ChatUI(QWidget):
 		
 		self.send_add_toggle = QCheckBox()
 		self.send_add_toggle.setCheckState(Qt.Checked)
-		self.send_add_toggle.stateChanged.connect(lambda: self.send_button.setText("Send" if self.send_add_toggle.isChecked() else "Add"))
+		self.send_add_toggle.stateChanged.connect(lambda: self.update_send_button_text())
 		self.input_layout.addWidget(self.send_add_toggle, alignment=Qt.AlignBottom)
 		
 		self.input_layout.addWidget(self.send_button, alignment=Qt.AlignBottom)
@@ -356,3 +359,31 @@ class ChatUI(QWidget):
 	
 	def render_message(self, message:Message):
 		self.list_view.render_message(message)
+	
+	def update_send_button_text(self):
+		#"Run" if has unrun command, change to run, and the input field is empty:
+		if self.has_unrun_command and self.input_field.toPlainText() == "":
+			if self.send_button.text() != "Run":
+				self.send_button.setText("Run")
+				try:
+					self.send_button.clicked.disconnect(self.send_message)
+				except TypeError:
+					pass
+				self.send_button.clicked.connect(self.confirm_command.emit)
+		else:
+			if self.send_button.text() == "Run":
+				try:
+					self.send_button.clicked.disconnect(self.confirm_command.emit)
+				except TypeError:
+					pass
+				self.send_button.clicked.connect(self.send_message)
+			self.send_button.setText("Send" if self.send_add_toggle.isChecked() else "Add")
+	
+	@property
+	def has_unrun_command(self):
+		return self._has_unrun_command
+	
+	@has_unrun_command.setter
+	def has_unrun_command(self, value:bool):
+		self._has_unrun_command = value
+		self.update_send_button_text()
