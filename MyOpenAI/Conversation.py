@@ -18,6 +18,7 @@ class Hashable():
 class Message(Hashable):
 	def __init__(self, data:Dict[str, str], date=None):
 		self.json = data
+		self.should_send = True
 		if date is None:
 			if "created" in data:
 				self.date = datetime.datetime.fromtimestamp(int(data["created"]))
@@ -92,7 +93,7 @@ class Conversation(Hashable):
 	
 	@classmethod
 	def from_list(cls, messages:List[Dict[str, str]]):
-		return cls([Message(message) for message in messages])
+		return cls([Message(message) for message in messages if message.should_send])
 		
 	def as_list(self):
 		"""

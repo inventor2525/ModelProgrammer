@@ -9,6 +9,8 @@ from PyQt5.QtCore import Qt, QSize, QPoint, QSettings, QByteArray, pyqtSignal, Q
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QTextOption, QColor, QPalette, QPainter
 from typing import Dict, List, Tuple, Optional, Union, Callable, Any
 
+from .TokenCounter import tokens_in_message, tokens_in_string
+
 class ColoredFrame(QFrame):
 	def __init__(self, background_color, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -39,14 +41,40 @@ class MessageView(ColoredFrame):
 		
 		self.layout = QHBoxLayout()
 		self.setLayout(self.layout)
-
+		
+		self.left_layout = QVBoxLayout()
+		self.layout.addLayout(self.left_layout)
+		
 		# Role (and optional name) label
 		self.role_label = QLabel()
 		self.role_label.setText(f"{message.full_role}:")
 		self.role_label.setFixedWidth(100)
 		self.role_label.setWordWrap(True)
-		self.layout.addWidget(self.role_label)
-
+		self.left_layout.addWidget(self.role_label)
+		
+		# Date label
+		self.date_label = QLabel()
+		self.date_label.setText(message.date.strftime("%Y-%m-%d %H:%M:%S"))
+		self.date_label.setFixedWidth(100)
+		self.date_label.setWordWrap(True)
+		self.left_layout.addWidget(self.date_label)
+		
+		# Token count label
+		self.token_count_label = QLabel()
+		self.token_count_label.setText(f"{tokens_in_message(message)} tokens")
+		self.token_count_label.setFixedWidth(100)
+		self.token_count_label.setWordWrap(True)
+		self.left_layout.addWidget(self.token_count_label)
+		
+		# Should send toggle
+		self.should_send_checkbox = QCheckBox("Send")
+		self.should_send_checkbox.setChecked(message.should_send)
+		self.should_send_checkbox.stateChanged.connect(self.on_should_send_changed)
+		self.left_layout.addWidget(self.should_send_checkbox)
+		
+		# Spacer
+		self.left_layout.addStretch()
+		
 		# Editable text box
 		self.text_edit = QTextEdit()
 		self.text_edit.setPlainText(message['content'])
@@ -85,6 +113,10 @@ class MessageView(ColoredFrame):
 
 		self.update_text_edit_height()
 	
+	def on_should_send_changed(self, state):
+		self.message.should_send = state == Qt.Checked
+		# self.parent.message_changed.emit(self.message)
+	
 	def update_text_edit_height(self):
 		new_height = int(self.delete_btn.sizeHint().height() * 3)
 		margins = self.text_edit.contentsMargins()
@@ -101,7 +133,8 @@ class MessageView(ColoredFrame):
 		self.update_text_edit_height()
 		
 	def on_text_changed(self):
-		if self.text_edit.toPlainText() != self.message['content']:
+		text = self.text_edit.toPlainText()
+		if text != self.message['content']:
 			self.confirm_btn.setVisible(True)
 			# self.text_edit.setStyleSheet("border: 3px solid rgba(0, 0, 255, 0.3);")
 			self.text_edit.setStyleSheet("QTextEdit {border: 3px solid rgba(0, 0, 255, 0.3);}")
@@ -114,6 +147,8 @@ class MessageView(ColoredFrame):
 			self.text_edit.setMinimumHeight(int(self.text_edit.document().size().height()))
 			self.text_edit.updateGeometry()
 			self.rowHeightChanged.emit()
+		
+		self.token_count_label.setText(f"{tokens_in_string(text)} tokens")
 		
 	def delete_message(self):
 		pass
