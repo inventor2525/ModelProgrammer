@@ -7,7 +7,7 @@ import json
 
 class MessageType(Enum):
 	RawChatbotResponse = 0
-	FormatedChatbotResponse = 1
+	FormattedChatbotResponse = 1
 	ManualEntry = 2
 	TerminalOutput = 3
 	Edit = 4
@@ -21,7 +21,7 @@ class ConversationDB():
 	Stores conversations in a sqlite database.
 	
 	Hashes each message and saves it uniquely to a sqlite database by its hash.
-	Records in a seperate table the list of message hashes that make up each conversation.
+	Records in a separate table the list of message hashes that make up each conversation.
 	Saves responses to the database by its hash, and records the hash in the conversation table.
 	
 	Note that all hashes are SHA-256 hashes.
@@ -44,12 +44,12 @@ class ConversationDB():
 		"""
 		date = self.now()
 		
-		#Save the message to the database preserving the origional message if it exists
+		#Save the message to the database preserving the original message if it exists
 		self.cursor.execute("SELECT * FROM messages WHERE hash = ?", (message.hash,))
 		if not self.cursor.fetchone():
 			self.cursor.execute("INSERT INTO messages VALUES (?, ?)", (message.hash, str(message)))
 		
-		#Save the message_info to the database preserving the origional info if it exists
+		#Save the message_info to the database preserving the original info if it exists
 		self.cursor.execute("SELECT * FROM message_info WHERE hash = ?", (message.hash,))
 		if not self.cursor.fetchone():
 			self.cursor.execute("INSERT INTO message_info VALUES (?, ?, ?, ?, ?)", (message.hash, date, int(message_type), message.full_role, source_hash))
@@ -84,7 +84,7 @@ class ConversationDB():
 		self.cursor.execute("INSERT INTO messages VALUES (?, ?)", (response.hash, json.dumps(response.json)))
 		self.connection.commit()
 		
-		#Save the message_info to the database preserving the origional info if it exists
+		#Save the message_info to the database preserving the original info if it exists
 		self.cursor.execute("SELECT * FROM message_info WHERE hash = ?", (response.hash,))
 		if not self.cursor.fetchone():
 			self.cursor.execute("INSERT INTO message_info VALUES (?, ?, ?, ?, ?)", (response.hash, date, int(MessageType.RawChatbotResponse), "assistant", conversation.hash))

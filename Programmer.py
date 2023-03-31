@@ -55,7 +55,7 @@ class Programmer():
 					response = Message(response_json)
 					self.db.save_response_for_conversation(conversation, response) #Save the raw response from the chatbot
 					response = self.format_response(response) #Format the response as a Message supported by the ChatUI and ChatBot
-					self.db.save_message(response, MessageType.FormatedChatbotResponse, response.hash) #Save the formated response refering to the raw response
+					self.db.save_message(response, MessageType.FormattedChatbotResponse, response.hash) #Save the formatted response referring to the raw response
 					
 					self.chat_ui.render_message(response)
 					conversation.add_message(response)

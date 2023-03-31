@@ -97,7 +97,7 @@ class Conversation(Hashable):
 		
 	def as_list(self):
 		"""
-		Generates a sendable list of messages jsons ready to be sent to OpenAI's Chat API.
+		Generates a sendable list of messages json's ready to be sent to OpenAI's Chat API.
 		
 		Returns:
 			list: A list of message dictionaries, each of which has a "role" key and a "content" key, some also have a "name" key.
