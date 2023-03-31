@@ -1,28 +1,20 @@
-# TODO
+# Bad Idea
+An experiment in letting AI use the terminal with human supervision to accomplish more complex tasks.
 
-1. \n's need to be filtered out
+# Why?
+1. Current LLMs can already code larger projects, they just need to not require so much back and forth copy paste. My time as a programmer has been relogated significantly to clipboard transfer, this is not ideal. It needs to be more "ideate review confirm modify".
+1. To experiment with LLM debugging capabilities.
+1. (future) experiment with bootstrapping through terminal usage. In theory, LLMs (even smaller ones!) should learn to code MUCH better if they had to debug their own code or write patches rather than spit out snippets.
 
-1. clean up of terminal messages
-
-1. view terminal output live by special message view
-1. add insert button before send for when selected single item
-1. disable view for message that was just "sent" until a response is back
-
-1. make it commit all changes to fields when sending if there are any un-saved
-
-1. stop selecting what I dont want in the drop down
-1. fix scroll view showing up for no lines in text box
-1. fix jumpy height of message text boxes
-
-1. speech to text
-1. text to speech
+# Ideas
+- Use
 
 
 
 
-1. date times need to be maintained properly when loading
-1. aduplicate messages from differnt people at differnt send times that have identical content should be supported, currently it's hashed solely by content
 
 
 
 
+
+Do this when I am awake!!!
