@@ -84,13 +84,4 @@ class Programmer():
 		if response is None:
 			return None
 		content = response.json["choices"][0]["message"]["content"]
-		return Message.from_role_content("assistant", content)		
-	
-if __name__ == '__main__':
-	app = QApplication(sys.argv)
-	
-	db = ConversationDB("Programmer_v0.db")
-	conversation = db.load_conversation(db.latest_conversation)
-	programmer = Programmer(db, conversation)
-	
-	sys.exit(app.exec_())
+		return Message.from_role_content("assistant", content)
