@@ -1,4 +1,4 @@
-from MyOpenAI.Conversation import *
+from ModelProgrammer.Conversation import *
 from enum import Enum
 import datetime
 import sqlite3

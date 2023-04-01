@@ -1,5 +1,5 @@
 import tiktoken
-from MyOpenAI.Conversation import Message, Conversation
+from ModelProgrammer.Conversation import Message, Conversation
 
 def tokens_in_string(s:str) -> int:
 	"""Note: This is not exact. See code in ChatBot.py for more details."""

@@ -1,7 +1,7 @@
-from MyOpenAI.ChatUI import *
-from MyOpenAI.Conversation import *
-from MyOpenAI.ConversationDB import *
-from MyOpenAI.ChatBot import *
+from ModelProgrammer.ChatUI import *
+from ModelProgrammer.Conversation import *
+from ModelProgrammer.ConversationDB import *
+from ModelProgrammer.ChatBot import *
 
 class Programmer():
 	def __init__(self, db:ConversationDB, conversation:Conversation=None, terminal:Terminal=None):

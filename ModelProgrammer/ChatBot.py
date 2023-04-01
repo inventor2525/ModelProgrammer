@@ -1,5 +1,5 @@
-from MyOpenAI.Conversation import Conversation, Message
-from MyOpenAI.Terminal import Terminal
+from ModelProgrammer.Conversation import Conversation, Message
+from ModelProgrammer.Terminal import Terminal
 from typing import List, Dict
 import tiktoken
 import asyncio
@@ -48,7 +48,6 @@ class ChatBot:
 		tokens = encoding.encode(message)
 		return len(tokens)
 		
-	#send_messages using the chat function from MyOpenAI/Chatter.py and return json
 	async def send_conversation(self, conversation:Conversation, max_tokens:int=150) -> Dict[str,str]:
 		conversation_tokens = self.count_conversation_tokens(conversation)
 		max_tokens = min(4096 - conversation_tokens, max_tokens)

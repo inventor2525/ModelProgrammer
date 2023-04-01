@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLineEdit, QPushButton, QScrollArea, QLabel
-from .Conversation import Conversation, Message
+from ModelProgrammer.Conversation import Conversation, Message
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem, QFrame, QAbstractItemView
 from PyQt5.QtCore import Qt
 
@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, QSize, QPoint, QSettings, QByteArray, pyqtSignal, Q
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QTextOption, QColor, QPalette, QPainter
 from typing import Dict, List, Tuple, Optional, Union, Callable, Any
 
-from .TokenCounter import tokens_in_message, tokens_in_string
+from ModelProgrammer.TokenCounter import tokens_in_message, tokens_in_string
 
 class ColoredFrame(QFrame):
 	def __init__(self, background_color, *args, **kwargs):
