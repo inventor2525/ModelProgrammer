@@ -47,7 +47,9 @@ class MessageView(ColoredFrame):
 		
 		# Role (and optional name) label
 		self.role_label = QLabel()
-		self.role_label.setText(f"{message.full_role}:")
+		#Get the role from the message, capitalizing the first letter of each word:
+		pascal_role = " ".join([word.capitalize() for word in message.full_role.split(" ")])
+		self.role_label.setText(f"{pascal_role}:")
 		self.role_label.setFixedWidth(100)
 		self.role_label.setWordWrap(True)
 		self.left_layout.addWidget(self.role_label)
