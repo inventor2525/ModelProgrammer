@@ -18,6 +18,7 @@ class Terminal:
         )
 		
     async def _read_output(self):
+        """Clean the output from the terminal."""
         loop = asyncio.get_event_loop()
         output = await loop.run_in_executor(None, os.read, self.master, 1024)
         decoded_output = output.decode()
@@ -26,7 +27,9 @@ class Terminal:
         extra_characters = re.compile(r'(\x07|^0;[^$]*)(?=.*?@)')
         return extra_characters.sub('', cleaned_output)
 		
-    async def run_command(self, command, timeout=None):
+    async def run_command(self, command:str, timeout:float=None)->str:
+        """Run the passed command and return the output."""
+        
         os.write(self.master, f"{command}\n".encode())
 
         lines = []
@@ -45,4 +48,5 @@ class Terminal:
         return "\n".join(lines)
 
     async def stop(self):
+        """Stop any running command"""
         os.killpg(os.getpgid(self.process.pid), signal.SIGINT)
