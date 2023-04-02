@@ -1,5 +1,4 @@
 # TODO (low level)
-1. \n's need to be filtered out
 1. The headless terminal needs to enter the state it was in on load of conversation
 > Thinking this could be as simple as saving a manually entered startup script for the conversation.
 1. Reduce context size where possible
@@ -26,6 +25,8 @@
 
 # Unsorted:
 
+1. Fix max_tokens calculation in ChatBot.py. Currently something like the following can be given:
+	> This model's maximum context length is 4097 tokens. However, you requested 4097 tokens (4031 in the messages, 66 in the completion). Please reduce the length of the messages or completion.
 1. date times need to be maintained properly when loading
 1. duplicate messages from different role/names at different send times that have identical content should be recorded in the database as separate messages, currently it's hashed solely by content
 1. Add a list of previous conversations, organized by date at first, with editable description.
