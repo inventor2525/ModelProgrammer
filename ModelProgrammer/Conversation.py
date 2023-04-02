@@ -93,16 +93,19 @@ class Conversation(Hashable):
 	
 	@classmethod
 	def from_list(cls, messages:List[Dict[str, str]]):
-		return cls([Message(message) for message in messages if message.should_send])
+		return cls([Message(message) for message in messages])
 		
-	def as_list(self):
+	def as_list(self, include_all:bool=False):
 		"""
 		Generates a sendable list of messages json's ready to be sent to OpenAI's Chat API.
 		
+		Args:
+			include_all (bool): If True, all messages will be included, even if they are not marked as "should_send".
+			
 		Returns:
 			list: A list of message dictionaries, each of which has a "role" key and a "content" key, some also have a "name" key.
 		"""
-		return [message.json for message in self.messages]
+		return [message.json for message in self.messages if message.should_send or include_all]
 	
 	def add_message(self, message:Message):
 		self.messages.append(message)
