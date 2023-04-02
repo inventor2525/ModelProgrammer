@@ -4,3 +4,5 @@ my_API_key.txt
 *.sqlite
 .vscode/settings.json
 *.egg-info*
+build/*
+dist/*
