@@ -96,7 +96,10 @@ class ConversationDB():
 	@property
 	def latest_conversation(self) -> str:
 		self.cursor.execute("SELECT hash FROM conversations order by datetime desc limit 1")
-		return self.cursor.fetchone()[0]
+		row = self.cursor.fetchone()
+		if row is None:
+			return None
+		return row[0]
 	
 	def load_message(self, message_hash:str) -> Message:
 		self.cursor.execute("SELECT json FROM messages WHERE hash = ?", (message_hash,))
@@ -106,6 +109,8 @@ class ConversationDB():
 		return Message(json.loads(message_text[0]))
 		
 	def load_conversation(self, conversation_hash:str) -> Conversation:
+		if conversation_hash is None:
+			return None
 		self.cursor.execute("SELECT message_hashes FROM conversations WHERE hash = ?", (conversation_hash,))
 		message_hashes = self.cursor.fetchone()
 		if message_hashes is None:
