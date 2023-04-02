@@ -69,3 +69,7 @@ One unique thing that could be done for instance is any time a change by the AI 
 ## License
 
 This project is licensed under the GNU General Public License v3.0 or any later version - see the [LICENSE](LICENSE) file for details.
+
+# Disclaimer
+
+I make no warranty of this, it can execute fully arbitrary code, so use at your own risk! Always check the commands this thing is going to run before it runs them!
