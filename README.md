@@ -9,10 +9,11 @@ Currently MP only supports OpenAI's ChatGPT 3 model but ideally it will support 
 To sit down and tell a chat bot your project idea and have it write it for you while debugging and committing it's work while seamlessly being able to collaborate with it, giving it code reviews, helping each other debug, etc.
 
 ## Features
-- Auto stores all conversation and message data in SQLite db for latter experimentation & model fine tuning
 - AI-powered programmer using OpenAI's ChatGPT 3 API
 - The AI can run terminal commands after the user confirms their safety
+- User can edit commands the AI writes before they are run.
 - The user can play the part of the AI to 'coax' an un-tuned LLM into development rather than conversation
+- Auto stores all conversation and message data in SQLite db for latter experimentation & model fine tuning, including changes to any messages.
 
 <p align="center">
   <img src="Screenshot.png" alt="Screenshot of the chatbot UI" />
