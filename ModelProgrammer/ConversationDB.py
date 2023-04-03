@@ -115,7 +115,7 @@ class ConversationDB():
 			self.cursor.execute("""
 				INSERT INTO messages (hash, content, datetime, type, role, source_hash_id)
 				VALUES (?, ?, ?, ?, ?, ?)
-			""", (message.hash, str(message), date, int(message_type), message.full_role, source_message_id))
+			""", (message.hash, str(message), date, int(message_type), message.short_role, source_message_id))
 			message_id = self.cursor.lastrowid
 
 		self.connection.commit()
@@ -189,9 +189,9 @@ class ConversationDB():
 		row = self.cursor.fetchone()
 		if row is None:
 			return None
-		message_content, full_role = row
+		message_content, short_role = row
 		message_dict = json.loads(message_content)
-		return Message.from_role_content(full_role, message_dict["content"])
+		return Message.from_role_content(short_role, message_dict["content"])
 		
 	def load_conversation(self, conversation_hash: str) -> Optional[Conversation]:
 		self.cursor.execute("SELECT id, datetime FROM conversations WHERE hash = ?", (conversation_hash,))
