@@ -18,18 +18,18 @@ class MessageType(Enum):
 		return self.value
 	
 def create_or_update_table(cursor, table_name, columns):
-    # Create the table if it does not exist
-    columns_definition = ', '.join([f"{col} {col_type}{f' DEFAULT {default!r}' if default is not None else ''}" for col, (col_type, default) in columns.items()])
-    cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_definition})")
+	# Create the table if it does not exist
+	columns_definition = ', '.join([f"{col} {col_type}{f' DEFAULT {default!r}' if default is not None else ''}" for col, (col_type, default) in columns.items()])
+	cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_definition})")
 
-    # Check existing columns in the table
-    cursor.execute(f"PRAGMA table_info({table_name})")
-    existing_columns = {col_info[1]: col_info for col_info in cursor.fetchall()}
+	# Check existing columns in the table
+	cursor.execute(f"PRAGMA table_info({table_name})")
+	existing_columns = {col_info[1]: col_info for col_info in cursor.fetchall()}
 
-    # Add missing columns with default values
-    for col, (col_type, default) in columns.items():
-        if col not in existing_columns:
-            cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {col} {col_type}{f' DEFAULT {default!r}' if default is not None else ''}")
+	# Add missing columns with default values
+	for col, (col_type, default) in columns.items():
+		if col not in existing_columns:
+			cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {col} {col_type}{f' DEFAULT {default!r}' if default is not None else ''}")
 
 class ConversationDB():
 	"""
@@ -53,6 +53,7 @@ class ConversationDB():
 			"type": ("INTEGER", None),
 			"role": ("TEXT", None),
 			"version": ("INTEGER", None),
+			"source_hash_id": ("INTEGER", None),
 		}
 
 		conversations_columns = {
@@ -62,6 +63,7 @@ class ConversationDB():
 			"version": ("INTEGER", None),
 			"description": ("TEXT NOT NULL", ''),
 			"startup_script": ("TEXT NOT NULL", ''),
+			"source_hash_id": ("INTEGER", None),
 		}
 
 		conversation_messages_columns = {
@@ -94,43 +96,57 @@ class ConversationDB():
 		"""
 		date = self.now()
 
+		# Get the source message id if the source hash is provided
+		source_message_id = None
+		if source_hash:
+			self.cursor.execute("SELECT id FROM messages WHERE hash = ?", (source_hash,))
+			source_message_id = self.cursor.fetchone()
+			if source_message_id:
+				source_message_id = source_message_id[0]
+
 		# Check if the message exists in the database
-		self.cursor.execute("SELECT id, version FROM messages WHERE hash = ?", (message.hash,))
+		self.cursor.execute("SELECT id FROM messages WHERE hash = ?", (message.hash,))
 		existing_message = self.cursor.fetchone()
 
 		if existing_message:
-			message_id, version = existing_message
+			message_id = existing_message[0]
 		else:
-			# If the message does not exist, insert it and set version to 1
-			version = 1
+			# If the message does not exist, insert it
 			self.cursor.execute("""
-				INSERT INTO messages (hash, content, datetime, type, role, version)
+				INSERT INTO messages (hash, content, datetime, type, role, source_hash_id)
 				VALUES (?, ?, ?, ?, ?, ?)
-			""", (message.hash, str(message), date, int(message_type), message.full_role, version))
+			""", (message.hash, str(message), date, int(message_type), message.full_role, source_message_id))
 			message_id = self.cursor.lastrowid
 
 		self.connection.commit()
 		return message_id
 				
-	def save_conversation(self, conversation: Conversation) -> int:
+	def save_conversation(self, conversation: Conversation, source_hash:Optional[str] = None) -> int:
 		"""
 		Saves a conversation to the database.
 		"""
 		date = self.now()
-		
+
+		# Get the source conversation id if the source hash is provided
+		source_conversation_id = None
+		if source_hash:
+			self.cursor.execute("SELECT id FROM conversations WHERE hash = ?", (source_hash,))
+			source_conversation_id = self.cursor.fetchone()
+			if source_conversation_id:
+				source_conversation_id = source_conversation_id[0]
+
 		# Check if the conversation exists in the database
-		self.cursor.execute("SELECT id, version FROM conversations WHERE hash = ?", (conversation.hash,))
+		self.cursor.execute("SELECT id FROM conversations WHERE hash = ?", (conversation.hash,))
 		existing_conversation = self.cursor.fetchone()
 
 		if existing_conversation:
-			conversation_id, version = existing_conversation
+			conversation_id = existing_conversation[0]
 		else:
-			# If the conversation does not exist, insert it and set version to 1
-			version = 1
+			# If the conversation does not exist, insert it
 			self.cursor.execute("""
-				INSERT INTO conversations (hash, datetime, version)
-				VALUES (?, ?, ?)
-			""", (conversation.hash, date, version))
+				INSERT INTO conversations (hash, datetime, description, startup_script, source_hash_id)
+				VALUES (?, ?, ?, ?, ?)
+			""", (conversation.hash, date, '', '', source_conversation_id))
 			conversation_id = self.cursor.lastrowid
 
 		# Save messages and update conversation_messages
@@ -153,12 +169,10 @@ class ConversationDB():
 		date = self.now()
 		conversation_id = self.save_conversation(conversation)
 		message_id = self.save_message(response, MessageType.RawChatbotResponse, conversation.hash)
-
-		# Add the response to the conversation_messages table
-		self.cursor.execute("""
-			INSERT INTO conversation_messages (conversation_id, message_id, message_order)
-			VALUES (?, ?, (SELECT COALESCE(MAX(message_order), -1) + 1 FROM conversation_messages WHERE conversation_id = ?))
-		""", (conversation_id, message_id, conversation_id))
+		
+		old_hash = conversation.hash
+		conversation.add_message(response)
+		self.save_conversation(conversation, old_hash)
 
 		self.connection.commit()
 
@@ -171,32 +185,33 @@ class ConversationDB():
 		return row[0]
 
 	def load_message(self, message_hash: str) -> Optional[Message]:
-		self.cursor.execute("SELECT content FROM messages WHERE hash = ?", (message_hash,))
-		message_text = self.cursor.fetchone()
-		if message_text is None:
+		self.cursor.execute("SELECT content, role FROM messages WHERE hash = ?", (message_hash,))
+		row = self.cursor.fetchone()
+		if row is None:
 			return None
-		message_dict = json.loads(message_text[0])
-		return Message.from_role_content(message_dict["role"], message_dict["content"])
+		message_content, full_role = row
+		message_dict = json.loads(message_content)
+		return Message.from_role_content(full_role, message_dict["content"])
 		
-	def load_conversation(self, conversation_hash:str) -> Optional[Conversation]:
-		self.cursor.execute("SELECT id FROM conversations WHERE hash = ?", (conversation_hash,))
-		conversation_id = self.cursor.fetchone()
-
-		if conversation_id is None:
+	def load_conversation(self, conversation_hash: str) -> Optional[Conversation]:
+		self.cursor.execute("SELECT id, datetime, description, startup_script FROM conversations WHERE hash = ?", (conversation_hash,))
+		row = self.cursor.fetchone()
+		if row is None:
 			return None
 
-		self.cursor.execute("""
-			SELECT m.content
-			FROM conversation_messages cm
-			JOIN messages m ON cm.message_id = m.id
-			WHERE cm.conversation_id = ?
-			ORDER BY cm.message_order
-		""", (conversation_id[0],))
+		conversation_id, datetime, description, startup_script = row
+		self.cursor.execute("SELECT message_id FROM conversation_messages WHERE conversation_id = ? ORDER BY message_order", (conversation_id,))
+		message_ids = [row[0] for row in self.cursor.fetchall()]
 
-		messages_dicts = [json.loads(message[0]) for message in self.cursor.fetchall()]
-		messages = [Message.from_role_content(message["role"], message["content"]) for message in messages_dicts]
+		messages = [self.load_message_by_id(message_id) for message_id in message_ids]
+		return Conversation(description=description, startup_script=startup_script, datetime=datetime, messages=messages)
 
-		return Conversation(messages)
+	def load_message_by_id(self, message_id: int) -> Optional[Message]:
+		self.cursor.execute("SELECT hash FROM messages WHERE id = ?", (message_id,))
+		message_hash = self.cursor.fetchone()[0]
+		if message_hash is None:
+			return None
+		return self.load_message(message_hash)
 	   
 	def get_conversation_description(self, conversation: Conversation) -> str:
 		self.cursor.execute("SELECT description FROM conversations WHERE hash = ?", (conversation.hash,))
