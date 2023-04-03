@@ -194,17 +194,17 @@ class ConversationDB():
 		return Message.from_role_content(full_role, message_dict["content"])
 		
 	def load_conversation(self, conversation_hash: str) -> Optional[Conversation]:
-		self.cursor.execute("SELECT id, datetime, description, startup_script FROM conversations WHERE hash = ?", (conversation_hash,))
+		self.cursor.execute("SELECT id, datetime FROM conversations WHERE hash = ?", (conversation_hash,))
 		row = self.cursor.fetchone()
 		if row is None:
 			return None
 
-		conversation_id, datetime, description, startup_script = row
+		conversation_id, datetime = row
 		self.cursor.execute("SELECT message_id FROM conversation_messages WHERE conversation_id = ? ORDER BY message_order", (conversation_id,))
 		message_ids = [row[0] for row in self.cursor.fetchall()]
 
 		messages = [self.load_message_by_id(message_id) for message_id in message_ids]
-		return Conversation(description=description, startup_script=startup_script, datetime=datetime, messages=messages)
+		return Conversation(messages)
 
 	def load_message_by_id(self, message_id: int) -> Optional[Message]:
 		self.cursor.execute("SELECT hash FROM messages WHERE id = ?", (message_id,))
