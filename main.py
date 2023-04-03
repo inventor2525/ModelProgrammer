@@ -8,7 +8,7 @@ if __name__ == '__main__':
 	os.makedirs(os.path.expanduser("~/.config/ModelProgrammer"), exist_ok=True)
 	
 	# Check if the database exists, if not, load the demo database if it exists:
-	database_version = '0'
+	database_version = '1'
 	database_path = os.path.expanduser(f"~/.config/ModelProgrammer/Programmer_v{database_version}.db")
 	if os.path.exists(database_path):
 		print(f"Loading user database at {database_path}.")
@@ -16,7 +16,7 @@ if __name__ == '__main__':
 		print(f"v{database_version} user database not found.")
 		print("Note: Time is not yet being spent on database migration, so if you have an older database it will still be in there, but will not be loaded.")
 		
-		if os.path.exists("demo.db"):
+		if False:#os.path.exists("demo.db"):
 			print("Loading demo database.")
 			
 			# Copy the demo database to the user's database_path:
