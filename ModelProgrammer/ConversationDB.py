@@ -198,3 +198,20 @@ class ConversationDB():
 
 		return Conversation(messages)
 	   
+	def get_conversation_description(self, conversation: Conversation) -> str:
+		self.cursor.execute("SELECT description FROM conversations WHERE hash = ?", (conversation.hash,))
+		description = self.cursor.fetchone()
+		return description[0] if description else ""
+
+	def set_conversation_description(self, conversation: Conversation, description: str):
+		self.cursor.execute("UPDATE conversations SET description = ? WHERE hash = ?", (description, conversation.hash,))
+		self.connection.commit()
+
+	def get_conversation_startup_script(self, conversation: Conversation) -> str:
+		self.cursor.execute("SELECT startup_script FROM conversations WHERE hash = ?", (conversation.hash,))
+		startup_script = self.cursor.fetchone()
+		return startup_script[0] if startup_script else ""
+
+	def set_conversation_startup_script(self, conversation: Conversation, startup_script: str):
+		self.cursor.execute("UPDATE conversations SET startup_script = ? WHERE hash = ?", (startup_script, conversation.hash,))
+		self.connection.commit()
