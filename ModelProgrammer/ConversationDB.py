@@ -53,7 +53,7 @@ class ConversationDB():
 			"type": ("INTEGER", None),
 			"role": ("TEXT", None),
 			"version": ("INTEGER", None),
-			"source_hash_id": ("INTEGER", None),
+			"source_id": ("INTEGER", None),
 		}
 
 		conversations_columns = {
@@ -63,7 +63,7 @@ class ConversationDB():
 			"version": ("INTEGER", None),
 			"description": ("TEXT NOT NULL", ''),
 			"startup_script": ("TEXT NOT NULL", ''),
-			"source_hash_id": ("INTEGER", None),
+			"source_id": ("INTEGER", None),
 		}
 
 		conversation_messages_columns = {
@@ -113,7 +113,7 @@ class ConversationDB():
 		else:
 			# If the message does not exist, insert it
 			self.cursor.execute("""
-				INSERT INTO messages (hash, content, datetime, type, role, source_hash_id)
+				INSERT INTO messages (hash, content, datetime, type, role, source_id)
 				VALUES (?, ?, ?, ?, ?, ?)
 			""", (message.hash, str(message), date, int(message_type), message.short_role, source_message_id))
 			message_id = self.cursor.lastrowid
@@ -144,7 +144,7 @@ class ConversationDB():
 		else:
 			# If the conversation does not exist, insert it
 			self.cursor.execute("""
-				INSERT INTO conversations (hash, datetime, description, startup_script, source_hash_id)
+				INSERT INTO conversations (hash, datetime, description, startup_script, source_id)
 				VALUES (?, ?, ?, ?, ?)
 			""", (conversation.hash, date, '', '', source_conversation_id))
 			conversation_id = self.cursor.lastrowid
