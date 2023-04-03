@@ -204,6 +204,7 @@ class ConversationDB():
 		return description[0] if description else ""
 
 	def set_conversation_description(self, conversation: Conversation, description: str):
+		self.save_conversation(conversation)
 		self.cursor.execute("UPDATE conversations SET description = ? WHERE hash = ?", (description, conversation.hash,))
 		self.connection.commit()
 
@@ -213,5 +214,6 @@ class ConversationDB():
 		return startup_script[0] if startup_script else ""
 
 	def set_conversation_startup_script(self, conversation: Conversation, startup_script: str):
+		self.save_conversation(conversation)
 		self.cursor.execute("UPDATE conversations SET startup_script = ? WHERE hash = ?", (startup_script, conversation.hash,))
 		self.connection.commit()
