@@ -246,9 +246,17 @@ class ConversationDB():
 		for message_data in old_messages:
 			message_hash, message_json, date, message_type, role, source_hash = message_data
 			message = json.loads(message_json)
-
-			message_json_string = json.dumps(message)  # Convert the message to a JSON string
-
+			
+			# Get name from the long role that is role:
+			role_pieces = role.split(" ")
+			if len(role_pieces) > 1:
+				role = role_pieces[1]
+			role = role.lower()
+			
+			# Convert the message to a JSON string
+			message_json_string = json.dumps(message) 
+			
+			# Save the message to the new database
 			self.cursor.execute("""
 				INSERT INTO messages (hash, content, datetime, type, role)
 				VALUES (?, ?, ?, ?, ?)
