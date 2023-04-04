@@ -53,13 +53,16 @@ class Programmer():
 					
 				if response_json is not None:
 					response = Message(response_json)
-					self.db.save_response_for_conversation(conversation, response) #Save the raw response from the chatbot
-					response = self.format_response(response) #Format the response as a Message supported by the ChatUI and ChatBot
-					self.db.save_message(response, MessageType.FormattedChatbotResponse, response.hash) #Save the formatted response referring to the raw response
+					self.db.save_message(response, MessageType.RawChatbotResponse) #Save the raw response from the chatbot
+					raw_response_hash = response.hash
 					
-					self.chat_ui.render_message(response)
+					response = self.format_response(response) #Format the response as a Message supported by the ChatUI and ChatBot
+					self.db.save_message(response, MessageType.FormattedChatbotResponse, raw_response_hash) #Save the formatted response referring to the raw response
+					
 					conversation.add_message(response)
 					self.db.save_conversation(conversation)
+					
+					self.chat_ui.render_message(response)
 					self.chat_ui.has_unrun_command = True #TODO: check if the response contains a command
 		elif message is not None and message.full_role == "assistant":
 			response = message

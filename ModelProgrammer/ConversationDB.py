@@ -159,20 +159,6 @@ class ConversationDB():
 
 		self.connection.commit()
 		return conversation_id
-	
-	def save_response_for_conversation(self, conversation:Conversation, response:Message):
-		"""
-		Saves a response to the database for the given conversation.
-		"""
-		date = self.now()
-		conversation_id = self.save_conversation(conversation)
-		message_id = self.save_message(response, MessageType.RawChatbotResponse, conversation.hash)
-		
-		old_hash = conversation.hash
-		conversation.add_message(response)
-		self.save_conversation(conversation, old_hash)
-
-		self.connection.commit()
 
 	@property
 	def latest_conversation(self) -> Optional[str]:
