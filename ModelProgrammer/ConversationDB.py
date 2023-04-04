@@ -52,7 +52,6 @@ class ConversationDB():
 			"datetime": ("TEXT", None),
 			"type": ("INTEGER", None),
 			"role": ("TEXT", None),
-			"version": ("INTEGER", None),
 			"source_id": ("INTEGER", None),
 		}
 
@@ -60,7 +59,6 @@ class ConversationDB():
 			"id": ("INTEGER PRIMARY KEY", None),
 			"hash": ("TEXT", None),
 			"datetime": ("TEXT", None),
-			"version": ("INTEGER", None),
 			"description": ("TEXT NOT NULL", ''),
 			"startup_script": ("TEXT NOT NULL", ''),
 			"source_id": ("INTEGER", None),
@@ -88,7 +86,7 @@ class ConversationDB():
 	
 	def now(self) -> str:
 		'''Get the datetime in the format: 2023-01-01 00:00:00'''
-		return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+		return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 		
 	def save_message(self, message:Message, message_type:MessageType, source_hash: Optional[str] = None) -> int:
 		"""
@@ -178,7 +176,7 @@ class ConversationDB():
 
 	@property
 	def latest_conversation(self) -> Optional[str]:
-		self.cursor.execute("SELECT hash FROM conversations ORDER BY datetime DESC LIMIT 1")
+		self.cursor.execute("SELECT hash FROM conversations ORDER BY datetime DESC, id DESC LIMIT 1")
 		row = self.cursor.fetchone()
 		if row is None:
 			return None
