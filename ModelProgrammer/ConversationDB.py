@@ -230,3 +230,79 @@ class ConversationDB():
 		self.save_conversation(conversation)
 		self.cursor.execute("UPDATE conversations SET startup_script = ? WHERE hash = ?", (startup_script, conversation.hash,))
 		self.connection.commit()
+
+	def migrate_data(self, old_db_path: str) -> None:
+		old_db = sqlite3.connect(old_db_path)
+		old_cursor = old_db.cursor()
+
+		# Step 1: Migrate messages and message_info data without setting the source_id
+		old_cursor.execute("""
+			SELECT m.hash, m.json, mi.datetime, mi.type, mi.role, mi.source_hash
+			FROM messages m
+			JOIN message_info mi ON m.hash = mi.hash
+		""")
+		old_messages = old_cursor.fetchall()
+
+		for message_data in old_messages:
+			message_hash, message_json, date, message_type, role, source_hash = message_data
+			message = json.loads(message_json)
+
+			message_json_string = json.dumps(message)  # Convert the message to a JSON string
+
+			self.cursor.execute("""
+				INSERT INTO messages (hash, content, datetime, type, role)
+				VALUES (?, ?, ?, ?, ?)
+			""", (message_hash, message_json_string, date, message_type, role))
+			self.connection.commit()
+
+		# Step 2: Update the source_id for all messages
+		self.cursor.execute("SELECT id, hash FROM messages")
+		message_id_hash_pairs = self.cursor.fetchall()
+
+		for message_id, message_hash in message_id_hash_pairs:
+			old_cursor.execute("SELECT source_hash FROM message_info WHERE hash = ?", (message_hash,))
+			source_hash = old_cursor.fetchone()[0]
+			
+			# Get the source message id if the source hash is provided
+			source_message_id = None
+			if source_hash:
+				self.cursor.execute("SELECT id FROM messages WHERE hash = ?", (source_hash,))
+				source_message_result = self.cursor.fetchone()
+				
+				if source_message_result:
+					source_message_id = source_message_result[0]
+						
+					self.cursor.execute("""
+						UPDATE messages
+						SET source_id = ?
+						WHERE id = ?
+					""", (source_message_id, message_id))
+					self.connection.commit()
+
+		# Migrate conversations data
+		old_cursor.execute("SELECT * FROM conversations")
+		old_conversations = old_cursor.fetchall()
+
+		for conversation_data in old_conversations:
+			conversation_hash, date, message_hashes_json = conversation_data
+			message_hashes = json.loads(message_hashes_json)
+
+			self.cursor.execute("""
+				INSERT INTO conversations (hash, datetime)
+				VALUES (?, ?)
+			""", (conversation_hash, date))
+			conversation_id = self.cursor.lastrowid
+			self.connection.commit()
+
+			for message_order, message_hash in enumerate(message_hashes):
+				self.cursor.execute("SELECT id FROM messages WHERE hash = ?", (message_hash,))
+				message_id = self.cursor.fetchone()[0]
+
+				self.cursor.execute("""
+					INSERT INTO conversation_messages (conversation_id, message_id, message_order)
+					VALUES (?, ?, ?)
+				""", (conversation_id, message_id, message_order))
+				self.connection.commit()
+
+		# Close the old database connection
+		old_db.close()
