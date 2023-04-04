@@ -48,6 +48,8 @@ class Message(Hashable):
 	
 	@property
 	def short_role(self):
+		if 'role' not in self.json:
+			return None
 		if 'name' in self.json:
 			return self.json['name']
 		else:
